@@ -1,6 +1,7 @@
 import os
 import asyncio
 import logging
+from dotenv import load_dotenv
 
 from aiogram import Bot, Dispatcher, types
 from aiogram.filters import Command
@@ -13,9 +14,11 @@ logger = logging.getLogger(__name__)
 
 
 def get_token() -> str:
-    token = "7674275430:AAGpsu-XwRSN7XPpPSZ7EMZ3FrMq52m_sEg"
+    # Load .env file if present (overrides nothing if env already set)
+    load_dotenv()
+    token = os.getenv("TELEGRAM_BOT_TOKEN")
     if not token:
-        logger.error("Environment variable TELEGRAM_BOT_TOKEN is not set. Set it and re-run the bot.")
+        logger.error("TELEGRAM_BOT_TOKEN is not set. Create a .env file or set the environment variable.")
         raise SystemExit(1)
     return token
 
@@ -50,6 +53,9 @@ def run():
 
     async def cmd_subscribe(message: types.Message):
         user = message.from_user
+        if user is None or not hasattr(user, "id") or user.id is None:
+            await message.reply("Could not determine your user id. Try again or contact the bot admin.")
+            return
         added = storage.add_subscriber(user.id)
         if added:
             await message.reply("Subscribed to door notifications. You will receive updates.")
@@ -58,6 +64,9 @@ def run():
 
     async def cmd_unsubscribe(message: types.Message):
         user = message.from_user
+        if user is None or not hasattr(user, "id") or user.id is None:
+            await message.reply("Could not determine your user id. Try again or contact the bot admin.")
+            return
         removed = storage.remove_subscriber(user.id)
         if removed:
             await message.reply("Unsubscribed. You will no longer receive updates.")

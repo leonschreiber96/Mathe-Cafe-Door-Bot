@@ -1,6 +1,6 @@
 import asyncio
 import logging
-from typing import Callable, Optional, Any, Dict
+from typing import Callable, Optional, Any, Dict, Awaitable
 import requests
 import os
 import json
@@ -104,7 +104,7 @@ class DoorMonitor:
             return "closed"
         return "unknown"
 
-    async def run(self, callback: Callable[[str], Optional[asyncio.Future]]):
+    async def run(self, callback: Callable[[str], Optional[Awaitable[Any]]]):
         """Continuously poll and call callback(new_status) when the status changes.
 
         The callback can be async; this method will await it if so.
