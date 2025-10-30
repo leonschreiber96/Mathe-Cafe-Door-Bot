@@ -18,7 +18,7 @@ class DoorMonitor:
 
     DEFAULT_URL = "https://door.mathe-cafe.de"
 
-    def __init__(self, url: Optional[str] = None, interval_seconds: int = 4):
+    def __init__(self, url: Optional[str] = None, interval_seconds: int = 60):
         self.url = url or self.DEFAULT_URL
         self.interval = interval_seconds
         self._last_status: Optional[str] = None
