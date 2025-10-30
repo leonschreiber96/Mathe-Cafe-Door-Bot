@@ -1,6 +1,6 @@
 # Cafe Door Telegram Notifier
 
-This small project polls the cafe door status page and notifies subscribed Telegram users when the door opens or closes.
+This small project polls the Mathe Cafe door status API and notifies subscribed Telegram users when the door opens or closes.
 
 Setup
 1. Create a bot and get a token from @BotFather on Telegram.
