@@ -1,8 +1,8 @@
-# Cafe Door Telegram Notifier
+# Mathe Café Door Bot
 
-This small project polls the Mathe Cafe door status API and notifies subscribed Telegram users when the door opens or closes.
+Polls the current door status (open or closed) of Mathe Café in 8th floor of the TU Berlin math building every minute. Uses the Mathe Café door status API and notifies subscribed Telegram users when the door opens or closes.
 
-Setup
+## Setup
 1. Create a bot and get a token from @BotFather on Telegram.
 2. Set the token in your environment before running the bot (zsh example):
 
@@ -30,4 +30,4 @@ Commands supported (Telegram):
 
 Notes
 - Subscribers are stored in `data/subscribers.json`.
-- Logs are stored in `data/history.json`.
+- Historical data is stored in `data/history.json`.
