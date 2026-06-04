@@ -1,7 +1,6 @@
 venv/
 env/
 __pycache__/
-data/subscribers.json
-
 data
 .env
+.python-version
