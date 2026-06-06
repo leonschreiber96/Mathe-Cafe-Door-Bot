@@ -148,3 +148,7 @@ dist
 *.db-wal
 .env
 data
+
+.DS_Store
+history.json
+history copy.json
