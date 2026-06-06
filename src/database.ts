@@ -1,7 +1,7 @@
 import { DatabaseSync } from "node:sqlite";
 import { DoorStatus } from "./doorService.js";
 
-const db = new DatabaseSync("data/mathe-cafe.db");
+const db = new DatabaseSync("src/data/mathe-cafe.db");
 db.exec(`PRAGMA journal_mode = WAL`);
 
 db.exec(`
@@ -174,9 +174,7 @@ const database = {
       return {
          openToday: Math.round(todayOpenHours * 10) / 10,
          openTodayPercent: todayOpenPercent,
-         firstOpened: firstOpenedToday
-            ? { h: firstOpenedToday.getHours(), m: firstOpenedToday.getMinutes() }
-            : null,
+         firstOpened: firstOpenedToday ? { h: firstOpenedToday.getHours(), m: firstOpenedToday.getMinutes() } : null,
          avgDailyOpen: Math.round(avgDailyOpenHours30d * 10) / 10,
          openingStreak,
       };
