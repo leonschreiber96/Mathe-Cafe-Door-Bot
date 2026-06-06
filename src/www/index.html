@@ -13,10 +13,9 @@
          }
 
          .app-shell {
-            @apply min-h-screen font-serif px-4 sm:px-8 py-6;
+            @apply max-w-[1500px] mx-auto min-h-screen font-serif px-4 sm:px-8 py-6;
          }
 
-         /* UPDATED: Stack header items on mobile, row on tablet/desktop */
          .topbar {
             @apply flex flex-col md:flex-row items-start md:items-end justify-between gap-4 pb-4 border-b-2 border-black;
          }
@@ -37,7 +36,6 @@
             @apply text-sm sm:text-lg italic text-black/80;
          }
 
-         /* UPDATED: Allow status group to wrap on very small screens */
          .status-group {
             @apply flex flex-wrap items-center gap-2 sm:gap-4 text-[13px] sm:text-[15px] italic;
          }
@@ -54,7 +52,7 @@
             @apply text-xl leading-none;
          }
 
-         /* UPDATED: Force 2 columns on mobile, 4 on desktop */
+         /* KPI cards */
          .kpi-grid {
             @apply grid grid-cols-2 lg:grid-cols-4 gap-4 mt-8;
          }
@@ -74,6 +72,79 @@
          .kpi-note {
             @apply mt-3 text-[11px] sm:text-[13px] italic text-black/80;
          }
+
+         /* Figures */
+         .figure-grid {
+            @apply grid grid-cols-1 lg:grid-cols-2 gap-4 mt-4;
+         }
+
+         .figure-card {
+            @apply border border-black bg-white p-4 sm:p-5;
+         }
+
+         .figure-head {
+            @apply flex items-baseline justify-between gap-3 mb-1;
+         }
+
+         .figure-title {
+            @apply text-base sm:text-lg font-bold;
+         }
+
+         .figure-tag {
+            @apply text-[11px] sm:text-xs italic text-black/60 whitespace-nowrap;
+         }
+
+         .figure-caption {
+            @apply text-[11px] sm:text-[13px] italic text-black/70 mb-3;
+         }
+
+         .figure-body svg {
+            @apply w-full h-auto block;
+         }
+
+         .footnote {
+            @apply mt-6 pt-3 border-t border-black/20 text-[11px] sm:text-[13px] italic text-black/70;
+         }
+
+         /* SVG primitives (kept here so charts share one academic style) */
+         .ax-line {
+            stroke: #000;
+            stroke-width: 1;
+         }
+         .grid-line {
+            stroke: #000;
+            stroke-opacity: 0.12;
+            stroke-width: 1;
+         }
+         .tick-text {
+            fill: #000;
+            font-size: 11px;
+            font-style: italic;
+         }
+         .axis-title {
+            fill: #000;
+            font-size: 11px;
+            font-style: italic;
+         }
+         .bar {
+            fill: #003380;
+         }
+         .bar-today {
+            fill: #6f8fbf;
+         }
+         .series-line {
+            fill: none;
+            stroke: #003380;
+            stroke-width: 2;
+         }
+         .series-area {
+            fill: #003380;
+            fill-opacity: 0.12;
+         }
+         .legend-text {
+            fill: #000;
+            font-size: 12px;
+         }
       </style>
    </head>
 
@@ -82,23 +153,23 @@
          <header class="topbar">
             <div class="brand">
                <div class="brand-mark">
-                  <img src="einemarke.png" />
+                  <img src="einemarke.png" alt="Mathe Cafe mark" />
                </div>
                <div>
-                  <h1 class="brand-title">Mathe Cafe Door</h1>
-                  <p class="brand-subtitle">An Analysis of the Boundary States and Lebesgue Measure of Space X</p>
+                  <h1 class="brand-title">DoorWatch</h1>
+                  <p class="brand-subtitle">A Data Dashboard for University Room Activity</p>
                </div>
             </div>
 
-            <div class="status-group">
+            <div class="status-group" id="status-group">
                <div class="status-item">
-                  <span>Status: Closed</span>
+                  <span id="status-label">Status: &mdash;</span>
                   <span class="status-bullet">&middot;</span>
-                  <span>Last Closed: 16:03</span>
+                  <span id="last-change">Last Closed: &mdash;</span>
                </div>
                <div class="status-divider"></div>
                <div class="status-item">
-                  <span>June 4, 2025</span>
+                  <span id="today-date">&mdash;</span>
                </div>
             </div>
          </header>
@@ -107,30 +178,73 @@
             <section class="kpi-grid">
                <article class="kpi-card">
                   <p class="kpi-label">Definition 1 (Today Open)</p>
-                  <p class="kpi-value" id="kpi-open-today"></p>
-                  <p class="kpi-note">44% of today</p>
+                  <p class="kpi-value" id="kpi-open-today">&mdash;</p>
+                  <p class="kpi-note" id="kpi-open-today-note">&mdash; of today</p>
                </article>
 
                <article class="kpi-card">
                   <p class="kpi-label">Definition 2 (First Opened)</p>
-                  <p class="kpi-value" id="kpi-first-opened"></p>
+                  <p class="kpi-value" id="kpi-first-opened">&mdash;</p>
                   <p class="kpi-note">first open today</p>
                </article>
 
                <article class="kpi-card">
                   <p class="kpi-label">Definition 3 (Avg Daily Open)</p>
-                  <p class="kpi-value" id="kpi-current-shift"></p>
+                  <p class="kpi-value" id="kpi-avg-daily">&mdash;</p>
                   <p class="kpi-note">last 30 days</p>
                </article>
 
                <article class="kpi-card">
                   <p class="kpi-label">Definition 4 (Active Streak)</p>
-                  <p class="kpi-value" id="kpi-opening-streak"></p>
+                  <p class="kpi-value" id="kpi-opening-streak">&mdash;</p>
                   <p class="kpi-note">consecutive days</p>
                </article>
             </section>
+
+            <section class="figure-grid">
+               <article class="figure-card">
+                  <div class="figure-head">
+                     <h2 class="figure-title">Figure 1: Daily Open Duration &mdash; Last 30 Days</h2>
+                     <span class="figure-tag">(30 days)</span>
+                  </div>
+                  <p class="figure-caption">Hours open per day. Highlighted bar = today.</p>
+                  <div class="figure-body" id="fig-daily"></div>
+               </article>
+
+               <article class="figure-card">
+                  <div class="figure-head">
+                     <h2 class="figure-title">Figure 2: Cumulative Open Time Today</h2>
+                     <span class="figure-tag">(today)</span>
+                  </div>
+                  <p class="figure-caption">Rises while open, flat while closed.</p>
+                  <div class="figure-body" id="fig-cumulative"></div>
+               </article>
+
+               <article class="figure-card">
+                  <div class="figure-head">
+                     <h2 class="figure-title">Figure 3: 24 h &times; 30 day Heatmap</h2>
+                     <span class="figure-tag">(open fraction)</span>
+                  </div>
+                  <p class="figure-caption">Each cell = 1 hour. Dark = open, light = closed.</p>
+                  <div class="figure-body" id="fig-heatmap"></div>
+               </article>
+
+               <article class="figure-card">
+                  <div class="figure-head">
+                     <h2 class="figure-title">Figure 4: First Open &amp; Last Close Times</h2>
+                     <span class="figure-tag">(scatter)</span>
+                  </div>
+                  <p class="figure-caption">Daily open/close clock times over 30 days.</p>
+                  <div class="figure-body" id="fig-scatter"></div>
+               </article>
+            </section>
+
+            <p class="footnote" id="footnote">
+               Note. All times local to the room. Date range: last 30 days including today.
+            </p>
          </main>
       </div>
+
       <script src="renderData.js"></script>
       <script src="api.js"></script>
    </body>

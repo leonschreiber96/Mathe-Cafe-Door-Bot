@@ -69,20 +69,22 @@ const database = {
       if (!row) return null;
       return { status: row.status, insertedAt: new Date(row.inserted_at) };
    },
-   getEventHistory(days: number): { timestamp: Date; status: DoorStatus }[] | null {
-      const row = db
+   getEventHistory(days: number): { timestamp: string; status: DoorStatus }[] {
+      const rows = db
          .prepare(
             "SELECT status, event_time from door_status where event_time >= datetime('now', '-' || ? || ' days') ORDER BY event_time",
          )
-         .all(days.toString()) as { status: DoorStatus; event_time: string }[] | undefined;
+         .all(days.toString()) as { status: DoorStatus; event_time: string }[];
 
-      if (!row) return null;
-      return row.map(({ status, event_time }) => ({ timestamp: new Date(event_time), status }));
+      // Return ISO strings so the JSON payload is unambiguous; the frontend
+      // parses them into Date objects itself.
+      return rows.map(({ status, event_time }) => ({ timestamp: event_time, status }));
    },
    getDailyKpis(): {
       openToday: number;
-      firstOpened: string;
-      currentShift: string;
+      openTodayPercent: number;
+      firstOpened: { h: number; m: number } | null;
+      avgDailyOpen: number;
       openingStreak: number;
    } {
       // Fetch all events from last 31 days (extra day for streak boundary)
@@ -125,8 +127,8 @@ const database = {
       }
 
       const todayOpenHours = todayOpenMs / 3_600_000;
-      // const hoursElapsedToday = (nowMs - todayStart.getTime()) / 3_600_000;
-      // const todayOpenPercent = Math.round((todayOpenHours / hoursElapsedToday) * 100);
+      const hoursElapsedToday = (nowMs - todayStart.getTime()) / 3_600_000;
+      const todayOpenPercent = hoursElapsedToday > 0 ? Math.round((todayOpenHours / hoursElapsedToday) * 100) : 0;
 
       // --- KPI 3: Avg daily open hours over last 30 days ---
       const openByDay = new Map<string, number>(); // "YYYY-MM-DD" → ms open
@@ -149,8 +151,11 @@ const database = {
          }
       }
 
-      // const totalOpenMs30d = [...openByDay.values()].reduce((a, b) => a + b, 0);
-      // const avgDailyOpenHours30d = totalOpenMs30d / 3_600_000 / 30;
+      // Average over the number of days that actually had any open time
+      // (avoids dragging the average down with fully-closed days).
+      const totalOpenMs30d = [...openByDay.values()].reduce((a, b) => a + b, 0);
+      const openDayCount = openByDay.size;
+      const avgDailyOpenHours30d = openDayCount > 0 ? totalOpenMs30d / 3_600_000 / openDayCount : 0;
 
       // --- KPI 4: Active streak (consecutive days with any open time) ---
       let openingStreak = 0;
@@ -168,8 +173,11 @@ const database = {
 
       return {
          openToday: Math.round(todayOpenHours * 10) / 10,
-         firstOpened: `${firstOpenedToday?.getHours()}:${firstOpenedToday?.getMinutes()}`,
-         currentShift: "Futschi Friday",
+         openTodayPercent: todayOpenPercent,
+         firstOpened: firstOpenedToday
+            ? { h: firstOpenedToday.getHours(), m: firstOpenedToday.getMinutes() }
+            : null,
+         avgDailyOpen: Math.round(avgDailyOpenHours30d * 10) / 10,
          openingStreak,
       };
    },

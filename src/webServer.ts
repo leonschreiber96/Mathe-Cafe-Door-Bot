@@ -2,16 +2,20 @@ import express from "express";
 import path from "path";
 import database from "./database.js";
 import { fileURLToPath } from "url";
-import { Request, Response, NextFunction } from "express";
+import { Request, Response } from "express";
 
 const DB = database;
-const WEB_SERVER_PORT = process.env.WEB_SERVER_PORT;
+const WEB_SERVER_PORT = Number(process.env.WEB_SERVER_PORT) || 3000;
+const HISTORY_DAYS = 30;
 
-function getDashboardData(_: Request, res: Response, next: NextFunction) {
-   const eventLog = DB.getEventHistory(30);
-   const kpis = DB.getDailyKpis();
-   res.json({ timestamp: new Date().toISOString(), eventLog, kpis });
-   next();
+function getDashboardData(_: Request, res: Response) {
+   try {
+      const eventLog = DB.getEventHistory(HISTORY_DAYS);
+      const kpis = DB.getDailyKpis();
+      res.json({ timestamp: new Date().toISOString(), days: HISTORY_DAYS, eventLog, kpis });
+   } catch (err) {
+      res.status(500).json({ error: err instanceof Error ? err.message : "Unknown error" });
+   }
 }
 
 const app = express();
