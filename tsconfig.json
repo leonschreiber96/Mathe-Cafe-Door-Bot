@@ -1,0 +1,69 @@
+{
+   "compilerOptions": {
+      // --- Type Checking ---
+
+      // Enables all strict type-checking flags. Default in TS 6.0.
+      // Includes strictNullChecks, noImplicitAny, strictFunctionTypes, etc.
+      // If you're tempted to turn this off: don't.
+      "strict": true,
+
+      // Verifies that side-effect-only imports (import "./setup.js") actually resolve.
+      // Without this, a typo in a side-effect import silently does nothing.
+      "noUncheckedSideEffectImports": true,
+
+      // Catch unused locals and parameters.
+      // Annoying during prototyping, valuable in production code.
+      "noUnusedLocals": true,
+      "noUnusedParameters": true,
+
+      // Force functions with code paths that don't all return a value to error.
+      "noImplicitReturns": true,
+
+      // --- Module System ---
+
+      // "nodenext" is the correct choice for Node.js in 2026.
+      // Supports both ESM and CJS. Understands package.json "exports".
+      // The old "node" value is deprecated.
+      "module": "nodenext",
+      "moduleResolution": "nodenext",
+
+      // --- Emit ---
+
+      // Modern JS output. Node 22+ supports everything in es2025.
+      "target": "ESNext",
+
+      // Compiled JS goes here. Add dist/ to .gitignore.
+      "outDir": "./dist",
+
+      // Your source root. Preserves directory structure in outDir.
+      "rootDir": "./src",
+
+      // Generate .d.ts files alongside JS output.
+      // Essential if you're building a library. Harmless for applications.
+      "declaration": true,
+
+      // Source maps for debugging. Your stack traces will point to .ts files
+      // instead of compiled .js, which makes production debugging bearable.
+      "sourceMap": true,
+
+      // --- Interop ---
+
+      // Allows default imports from modules with no default export.
+      // Mostly needed for compatibility with CommonJS packages.
+      "esModuleInterop": true,
+
+      // Resolve JSON files as modules. Useful for config files.
+      "resolveJsonModule": true,
+
+      // Ensure import casing matches the filesystem.
+      // Saves you from "works on Mac, breaks on Linux" issues.
+      "forceConsistentCasingInFileNames": true,
+      "types": ["node"],
+   },
+
+   // What to compile
+   "include": ["src/**/*"],
+
+   // What to ignore
+   "exclude": ["node_modules", "dist", "tests"],
+}

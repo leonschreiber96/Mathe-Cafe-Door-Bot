@@ -1,0 +1,8 @@
+{
+   "ext": "ts,js,json",
+   "exec": "tsx --env-file=.env index.ts",
+   "ignore": ["*.db", "*.db-shm", "*.db-wal"],
+   "env": {
+      "DEVELOPMENT": "1"
+   }
+}
