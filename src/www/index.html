@@ -1,0 +1,137 @@
+<!doctype html>
+<html lang="en" data-theme="dark">
+   <head>
+      <meta charset="UTF-8" />
+      <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+      <title>DoorWatch</title>
+      <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
+
+      <style type="text/tailwindcss">
+         body {
+            /* Gives a subtle warm paper feel instead of pure white */
+            @apply bg-[#fdfdfc] text-black antialiased;
+         }
+
+         .app-shell {
+            @apply min-h-screen font-serif px-4 sm:px-8 py-6;
+         }
+
+         /* UPDATED: Stack header items on mobile, row on tablet/desktop */
+         .topbar {
+            @apply flex flex-col md:flex-row items-start md:items-end justify-between gap-4 pb-4 border-b-2 border-black;
+         }
+
+         .brand {
+            @apply flex items-center gap-4;
+         }
+
+         .brand-mark {
+            @apply flex-shrink-0 h-12 w-12 flex items-center justify-center bg-white;
+         }
+
+         .brand-title {
+            @apply text-3xl font-bold tracking-tight mb-1;
+         }
+
+         .brand-subtitle {
+            @apply text-sm sm:text-lg italic text-black/80;
+         }
+
+         /* UPDATED: Allow status group to wrap on very small screens */
+         .status-group {
+            @apply flex flex-wrap items-center gap-2 sm:gap-4 text-[13px] sm:text-[15px] italic;
+         }
+
+         .status-item {
+            @apply flex items-center gap-2 sm:gap-4;
+         }
+
+         .status-divider {
+            @apply w-[1px] h-4 bg-black/30;
+         }
+
+         .status-bullet {
+            @apply text-xl leading-none;
+         }
+
+         /* UPDATED: Force 2 columns on mobile, 4 on desktop */
+         .kpi-grid {
+            @apply grid grid-cols-2 lg:grid-cols-4 gap-4 mt-8;
+         }
+
+         .kpi-card {
+            @apply border border-black bg-white pt-3 pb-5 px-2 sm:px-4 text-center;
+         }
+
+         .kpi-label {
+            @apply text-[10px] sm:text-xs uppercase tracking-[0.1em] text-black pb-3 border-b border-black/20 mx-1 sm:mx-2;
+         }
+
+         .kpi-value {
+            @apply mt-4 text-2xl sm:text-[42px] leading-none text-[#003380] tabular-nums;
+         }
+
+         .kpi-note {
+            @apply mt-3 text-[11px] sm:text-[13px] italic text-black/80;
+         }
+      </style>
+   </head>
+
+   <body>
+      <div class="app-shell">
+         <header class="topbar">
+            <div class="brand">
+               <div class="brand-mark">
+                  <img src="einemarke.png" />
+               </div>
+               <div>
+                  <h1 class="brand-title">Mathe Cafe Door</h1>
+                  <p class="brand-subtitle">An Analysis of the Boundary States and Lebesgue Measure of Space X</p>
+               </div>
+            </div>
+
+            <div class="status-group">
+               <div class="status-item">
+                  <span>Status: Closed</span>
+                  <span class="status-bullet">&middot;</span>
+                  <span>Last Closed: 16:03</span>
+               </div>
+               <div class="status-divider"></div>
+               <div class="status-item">
+                  <span>June 4, 2025</span>
+               </div>
+            </div>
+         </header>
+
+         <main>
+            <section class="kpi-grid">
+               <article class="kpi-card">
+                  <p class="kpi-label">Definition 1 (Today Open)</p>
+                  <p class="kpi-value" id="kpi-open-today"></p>
+                  <p class="kpi-note">44% of today</p>
+               </article>
+
+               <article class="kpi-card">
+                  <p class="kpi-label">Definition 2 (First Opened)</p>
+                  <p class="kpi-value" id="kpi-first-opened"></p>
+                  <p class="kpi-note">first open today</p>
+               </article>
+
+               <article class="kpi-card">
+                  <p class="kpi-label">Definition 3 (Avg Daily Open)</p>
+                  <p class="kpi-value" id="kpi-current-shift"></p>
+                  <p class="kpi-note">last 30 days</p>
+               </article>
+
+               <article class="kpi-card">
+                  <p class="kpi-label">Definition 4 (Active Streak)</p>
+                  <p class="kpi-value" id="kpi-opening-streak"></p>
+                  <p class="kpi-note">consecutive days</p>
+               </article>
+            </section>
+         </main>
+      </div>
+      <script src="renderData.js"></script>
+      <script src="api.js"></script>
+   </body>
+</html>
