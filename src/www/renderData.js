@@ -26,6 +26,17 @@ const MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "
 const fmtDate = (d) => `${MONTHS[d.getMonth()]} ${d.getDate()}, ${d.getFullYear()}`;
 const fmtShortDate = (d) => `${MONTHS[d.getMonth()]} ${d.getDate()}`;
 
+/* Compact human duration: "2h 14m", "43m", "38s". */
+const fmtDur = (ms) => {
+   const totalSec = Math.max(0, Math.round(ms / 1000));
+   const h = Math.floor(totalSec / 3600);
+   const m = Math.floor((totalSec % 3600) / 60);
+   const s = totalSec % 60;
+   if (h > 0) return `${h}h ${pad2(m)}m`;
+   if (m > 0) return `${m}m`;
+   return `${s}s`;
+};
+
 const svgEl = (tag, attrs = {}, text) => {
    const el = document.createElementNS("http://www.w3.org/2000/svg", tag);
    for (const [k, v] of Object.entries(attrs)) el.setAttribute(k, v);
@@ -166,10 +177,15 @@ function renderDailyBars(state) {
       );
    });
 
-   // X tick labels every ~4 days
+   // X tick labels every ~4 days; always label the final day, but drop a
+   // regular tick that would collide with it.
+   const lastIdx = days.length - 1;
    days.forEach((d, i) => {
-      if (i % 4 !== 0 && i !== days.length - 1) return;
-      svg.appendChild(svgEl("text", { x: x(i), y: H - 12, "text-anchor": "middle", class: "tick-text" }, fmtShortDate(d)));
+      const isLast = i === lastIdx;
+      const isRegular = i % 4 === 0;
+      if (!isLast && !isRegular) return;
+      if (isRegular && !isLast && lastIdx - i < 3) return; // avoid collision with final label
+      svg.appendChild(svgEl("text", { x: x(i), y: H - 12, "text-anchor": isLast ? "end" : "middle", class: "tick-text" }, fmtShortDate(d)));
    });
 
    const host = document.getElementById("fig-daily");
@@ -380,6 +396,83 @@ function renderScatter(state) {
    document.getElementById("fig-scatter").replaceChildren(svg);
 }
 
+/* ---------- Figure 5: today's timeline (gantt) ---------- */
+
+function renderGantt(state) {
+   const { intervals, now } = state;
+   const W = 700,
+      H = 120;
+   const m = { top: 18, right: 16, bottom: 28, left: 16 };
+   const { svg } = makeSvg(W, H);
+
+   const today0 = startOfDay(now);
+   const plotW = W - m.left - m.right;
+   const trackY = m.top;
+   const trackH = H - m.top - m.bottom;
+   const x = (t) => m.left + ((t - today0.getTime()) / DAY_MS) * plotW;
+
+   // Track outline.
+   svg.appendChild(
+      svgEl("rect", { x: m.left, y: trackY, width: plotW, height: trackH, fill: "#f3f3f1", stroke: "#000", "stroke-width": 1 }),
+   );
+
+   // Hour gridlines every 6h.
+   for (let hh = 0; hh <= 24; hh += 6) {
+      const xx = x(today0.getTime() + hh * HOUR_MS);
+      svg.appendChild(svgEl("line", { x1: xx, y1: trackY, x2: xx, y2: trackY + trackH, class: "grid-line" }));
+      svg.appendChild(svgEl("text", { x: xx, y: H - 10, "text-anchor": hh === 0 ? "start" : hh === 24 ? "end" : "middle", class: "tick-text" }, `${pad2(hh % 24)}:00`));
+   }
+
+   // Open segments clipped to today.
+   const todays = intervals
+      .map(({ start, end }) => ({
+         start: Math.max(start.getTime(), today0.getTime()),
+         end: Math.min(end.getTime(), now.getTime()),
+      }))
+      .filter((iv) => iv.end > iv.start);
+
+   for (const iv of todays) {
+      const segX = x(iv.start);
+      const segW = Math.max(2, x(iv.end) - segX);
+      svg.appendChild(svgEl("rect", { x: segX, y: trackY + 1, width: segW, height: trackH - 2, fill: NAVY, "fill-opacity": 0.85 }));
+   }
+
+   document.getElementById("fig-gantt").replaceChildren(svg);
+
+   // "(N events)" tag = number of state changes today.
+   const todayEvents = state.events.filter((e) => e.t >= today0);
+   const n = todayEvents.length;
+   const tag = document.getElementById("fig-gantt-tag");
+   if (tag) tag.textContent = `(${n} event${n === 1 ? "" : "s"})`;
+}
+
+/* ---------- Figure 6: event log ---------- */
+
+function renderEventLog(state) {
+   const sorted = [...state.events].sort((a, b) => a.t - b.t);
+   const tbody = document.getElementById("log-body");
+   if (!tbody) return;
+   const rows = [];
+   // Show the 30 most recent events, newest first.
+   const startIdx = Math.max(1, sorted.length - 30);
+   for (let i = sorted.length - 1; i >= 0 && i >= startIdx - 1; i--) {
+      const ev = sorted[i];
+      const prev = i > 0 ? sorted[i - 1] : null;
+      const held = prev ? fmtDur(ev.t - prev.t) : "\u2014";
+      const isOpen = ev.status === "OPEN";
+      const stateWord = ev.status[0] + ev.status.slice(1).toLowerCase();
+      const badgeClass = isOpen ? "ev-open" : "ev-closed";
+      const dayStr = `${pad2(ev.t.getDate())} ${MONTHS[ev.t.getMonth()]}`;
+      const tr = document.createElement("tr");
+      tr.innerHTML =
+         `<td><span class="ev-badge ${badgeClass}"><span class="ev-dot"></span>${stateWord}</span></td>` +
+         `<td>${fmtClock(ev.t)}<span class="log-sub">${dayStr}</span></td>` +
+         `<td>${held}</td>`;
+      rows.push(tr);
+   }
+   tbody.replaceChildren(...rows);
+}
+
 /* ---------- entry point called by api.js ---------- */
 
 function renderDashboard(payload) {
@@ -394,6 +487,8 @@ function renderDashboard(payload) {
    renderCumulativeToday(state);
    renderHeatmap(state);
    renderScatter(state);
+   renderGantt(state);
+   renderEventLog(state);
 }
 
 window.renderDashboard = renderDashboard;
