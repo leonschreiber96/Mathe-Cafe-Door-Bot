@@ -113,6 +113,10 @@ const router = express.Router();
 // Static files — serves www/index.html at /mathe-door-dashboard/
 router.use(express.static(path.join(__dirname, "www")));
 
+router.get("/", (_req, res) => {
+   res.sendFile(path.join(__dirname, "www", "index.html"));
+});
+
 // API routes — all paths here are relative to /mathe-door-dashboard
 router.get("/api/dashboard", getDashboardData);
 router.get("/api/status", getStatus);
