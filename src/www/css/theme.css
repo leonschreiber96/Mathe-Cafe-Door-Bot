@@ -1,0 +1,47 @@
+/* theme.css — the single source of truth for the printed-paper palette.
+ *
+ * Every colour lives here as a CSS custom property so the look can be retuned
+ * in one place. Tailwind's config (in index.html) maps its colour names to
+ * these same hex values, and the Chart.js theme (js/core/chart-theme.js) reads
+ * them at runtime via getComputedStyle — so HTML, CSS and canvas all stay in
+ * sync from this one file.
+ */
+
+:root {
+  /* surfaces */
+  --paper-bg:    #e8e2d2; /* outer board the sheets sit on */
+  --paper-bg1:   #efe9da;
+  --paper:       #f6f1e4; /* a sheet of paper */
+  --paper-2:     #efe9d9; /* recessed / inset paper */
+
+  /* rules & grid */
+  --line:        #b8ad94; /* ruled ink line / hairline border */
+  --line-soft:   #d4cab2; /* faint rule */
+  --grid:        #cabf9f; /* graph-paper grid for charts */
+  --grid-soft:   #d4cab2; /* dashed plot gridlines */
+
+  /* ink (text) */
+  --ink:         #26221a; /* body ink — warm near-black */
+  --ink-dim:     #5a5341; /* secondary ink */
+  --ink-faint:   #8a8068; /* faint annotation ink */
+
+  /* spot inks (status / series) */
+  --open:        #1f7a52; /* muted emerald — open */
+  --open-dim:    #d4e6da; /* pale open wash */
+  --closed:      #9e3445; /* oxblood — closed */
+  --closed-dim:  #ecd9d6; /* pale closed wash */
+  --unknown:     #7c7460; /* grey ink — unknown */
+  --unknown-dim: #ded6c2;
+
+  /* per-weekday series inks (Fig. 8), Mon → Sun */
+  --wd-mon: #1f7a52;
+  --wd-tue: #2f6f7a;
+  --wd-wed: #3a5e8c;
+  --wd-thu: #6b4ea3;
+  --wd-fri: #9e3a7a;
+  --wd-sat: #a9762b;
+  --wd-sun: #9e3445;
+
+  /* shape */
+  --radius-panel: 3px;
+}

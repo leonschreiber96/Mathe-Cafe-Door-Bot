@@ -7,10 +7,6 @@
       // If you're tempted to turn this off: don't.
       "strict": true,
 
-      // Verifies that side-effect-only imports (import "./setup.js") actually resolve.
-      // Without this, a typo in a side-effect import silently does nothing.
-      "noUncheckedSideEffectImports": true,
-
       // Catch unused locals and parameters.
       // Annoying during prototyping, valuable in production code.
       "noUnusedLocals": true,

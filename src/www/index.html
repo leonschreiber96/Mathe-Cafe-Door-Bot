@@ -1,306 +1,497 @@
 <!doctype html>
-<html lang="en" data-theme="dark">
+<html lang="en">
    <head>
-      <meta charset="UTF-8" />
-      <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-      <title>DoorWatch</title>
-      <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
+      <meta charset="utf-8" />
+      <meta name="viewport" content="width=device-width, initial-scale=1" />
+      <title>Door Status — Live Monitor</title>
+      <meta
+         name="description"
+         content="Live open/closed monitoring for the university café door, with semester-aware analytics."
+      />
 
-      <style type="text/tailwindcss">
-         body {
-            /* Gives a subtle warm paper feel instead of pure white */
-            @apply bg-[#fdfdfc] text-black antialiased;
-         }
+      <!-- Fonts: serif body (journal text) + monospace for data/tables -->
+      <link rel="preconnect" href="https://fonts.googleapis.com" />
+      <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+      <link
+         href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600&family=Newsreader:ital,opsz,wght@0,6..72,400;0,6..72,500;0,6..72,600;0,6..72,700;1,6..72,400;1,6..72,500;1,6..72,600&display=swap"
+         rel="stylesheet"
+      />
 
-         .app-shell {
-            @apply max-w-[1500px] mx-auto min-h-screen font-serif px-4 sm:px-8 py-6;
-         }
+      <!-- Styles: theme.css owns the palette (as CSS vars); dashboard.css the structure -->
+      <link rel="stylesheet" href="css/theme.css" />
+      <link rel="stylesheet" href="css/dashboard.css" />
 
-         .topbar {
-            @apply flex flex-col md:flex-row items-start md:items-end justify-between gap-4 pb-4 border-b-2 border-black;
-         }
+      <!-- Tailwind Play CDN. Colour names map to the SAME CSS vars defined in
+       theme.css, so the palette has a single source of truth. -->
+      <script src="https://cdn.tailwindcss.com"></script>
+      <script>
+         tailwind.config = {
+            theme: {
+               extend: {
+                  colors: {
+                     bg: "var(--paper-bg)",
+                     bg1: "var(--paper-bg1)",
+                     panel: "var(--paper)",
+                     panel2: "var(--paper-2)",
+                     line: "var(--line)",
+                     linesoft: "var(--line-soft)",
+                     ink: "var(--ink)",
+                     inkdim: "var(--ink-dim)",
+                     inkfaint: "var(--ink-faint)",
+                     grid: "var(--grid)",
+                     open: "var(--open)",
+                     opendim: "var(--open-dim)",
+                     closed: "var(--closed)",
+                     closeddim: "var(--closed-dim)",
+                     unknown: "var(--unknown)",
+                     unknowndim: "var(--unknown-dim)",
+                  },
+                  fontFamily: {
+                     mono: ['"JetBrains Mono"', "ui-monospace", "SFMono-Regular", "Menlo", "monospace"],
+                     serif: ['"Newsreader"', "Georgia", '"Times New Roman"', "serif"],
+                  },
+                  borderRadius: { panel: "var(--radius-panel)" },
+               },
+            },
+         };
+      </script>
 
-         .brand {
-            @apply flex items-center gap-4;
-         }
+      <!-- Third-party libs (UMD globals consumed by the modules) -->
+      <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.3/dist/chart.umd.min.js"></script>
+      <script src="https://cdn.jsdelivr.net/npm/luxon@3.4.4/build/global/luxon.min.js"></script>
+      <script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-luxon@1.3.1/dist/chartjs-adapter-luxon.umd.min.js"></script>
 
-         .brand-mark {
-            @apply flex-shrink-0 h-12 w-12 flex items-center justify-center bg-white;
-         }
+      <!-- Bundled mock payload (sets window.DOOR_MOCK). Remove when USE_MOCK=false. -->
+      <script src="js/mock-data.js"></script>
 
-         .brand-title {
-            @apply text-3xl font-bold tracking-tight mb-1;
-         }
-
-         .brand-subtitle {
-            @apply text-sm sm:text-lg italic text-black/80;
-         }
-
-         .status-group {
-            @apply flex flex-wrap items-center gap-2 sm:gap-4 text-[13px] sm:text-[15px] italic;
-         }
-
-         .status-item {
-            @apply flex items-center gap-2 sm:gap-4;
-         }
-
-         .status-divider {
-            @apply w-[1px] h-4 bg-black/30;
-         }
-
-         .status-bullet {
-            @apply text-xl leading-none;
-         }
-
-         /* KPI cards */
-         .kpi-grid {
-            @apply grid grid-cols-2 lg:grid-cols-4 gap-4 mt-8;
-         }
-
-         .kpi-card {
-            @apply border border-black bg-white pt-3 pb-5 px-2 sm:px-4 text-center;
-         }
-
-         .kpi-label {
-            @apply text-[10px] sm:text-xs uppercase tracking-[0.1em] text-black pb-3 border-b border-black/20 mx-1 sm:mx-2;
-         }
-
-         .kpi-value {
-            @apply mt-4 text-2xl sm:text-[42px] leading-none text-[#003380] tabular-nums;
-         }
-
-         .kpi-note {
-            @apply mt-3 text-[11px] sm:text-[13px] italic text-black/80;
-         }
-
-         /* Figures */
-         .figure-grid {
-            @apply grid grid-cols-1 lg:grid-cols-2 gap-4 mt-4;
-         }
-
-         .figure-card {
-            @apply border border-black bg-white p-4 sm:p-5;
-         }
-
-         .figure-head {
-            @apply flex items-baseline justify-between gap-3 mb-1;
-         }
-
-         .figure-title {
-            @apply text-base sm:text-lg font-bold;
-         }
-
-         .figure-tag {
-            @apply text-[11px] sm:text-xs italic text-black/60 whitespace-nowrap;
-         }
-
-         .figure-caption {
-            @apply text-[11px] sm:text-[13px] italic text-black/70 mb-3;
-         }
-
-         .figure-body svg {
-            @apply w-full h-auto block;
-         }
-
-         .footnote {
-            @apply mt-6 pt-3 border-t border-black/20 text-[11px] sm:text-[13px] italic text-black/70;
-         }
-
-         /* Event log table (Figure 6) */
-         .log-wrap {
-            @apply overflow-y-auto max-h-[260px] border-t border-black/15;
-         }
-         .log-tbl {
-            @apply w-full border-collapse text-[12px] sm:text-[13px];
-         }
-         .log-tbl th {
-            @apply text-left font-bold uppercase tracking-[0.08em] text-[10px] sm:text-[11px] py-2 px-2 border-b border-black sticky top-0 bg-white;
-         }
-         .log-tbl td {
-            @apply py-1.5 px-2 border-b border-black/10 align-top tabular-nums;
-         }
-         .ev-badge {
-            @apply inline-flex items-center gap-1.5 italic;
-         }
-         .ev-dot {
-            @apply inline-block h-2 w-2 rounded-full;
-         }
-         .ev-open .ev-dot {
-            background: #003380;
-         }
-         .ev-closed .ev-dot {
-            @apply border border-black/50;
-            background: #fff;
-         }
-         .log-sub {
-            @apply block text-black/45 text-[9px] sm:text-[10px] not-italic;
-         }
-
-         /* SVG primitives (kept here so charts share one academic style) */
-         .ax-line {
-            stroke: #000;
-            stroke-width: 1;
-         }
-         .grid-line {
-            stroke: #000;
-            stroke-opacity: 0.12;
-            stroke-width: 1;
-         }
-         .tick-text {
-            fill: #000;
-            font-size: 11px;
-            font-style: italic;
-         }
-         .axis-title {
-            fill: #000;
-            font-size: 11px;
-            font-style: italic;
-         }
-         .bar {
-            fill: #003380;
-         }
-         .bar-today {
-            fill: #6f8fbf;
-         }
-         .series-line {
-            fill: none;
-            stroke: #003380;
-            stroke-width: 2;
-         }
-         .series-area {
-            fill: #003380;
-            fill-opacity: 0.12;
-         }
-         .legend-text {
-            fill: #000;
-            font-size: 12px;
-         }
-      </style>
+      <!-- Application (ES modules). dashboard.js registers all <door-*> elements. -->
+      <script type="module" src="js/dashboard.js"></script>
    </head>
 
-   <body>
-      <div class="app-shell">
-         <header class="topbar">
-            <div class="brand">
-               <div class="brand-mark">
-                  <img src="einemarke.png" alt="Mathe Cafe mark" />
+   <body class="font-serif text-ink text-[14px] leading-relaxed">
+      <div class="paper-grid"></div>
+      <div class="paper-grain"></div>
+
+      <div class="relative z-10 mx-auto max-w-[1240px] px-[18px] pt-[18px] pb-16">
+         <!-- ── Masthead (journal nameplate) ── -->
+         <header class="mb-[18px] border-y-[3px] border-double border-ink py-3">
+            <div class="flex flex-wrap items-center justify-between gap-4">
+               <div class="flex items-center gap-3">
+                  <svg width="34" height="34" viewBox="0 0 34 34" fill="none" aria-label="Door monitor logo">
+                     <rect x="6.5" y="3.5" width="21" height="27" rx="1" stroke="#26221a" stroke-width="1.8" />
+                     <rect x="11" y="8" width="12" height="22" rx="0.5" stroke="#8a8068" stroke-width="1.3" />
+                     <circle cx="20" cy="19" r="1.5" fill="#1f7a52" />
+                     <path
+                        d="M24 6.5c2.2 2 2.2 6 0 8M27.5 4c3.6 3.4 3.6 11.6 0 15"
+                        stroke="#1f7a52"
+                        stroke-width="1.4"
+                        stroke-linecap="round"
+                     />
+                  </svg>
+                  <div>
+                     <h1 class="font-serif font-bold text-[24px] tracking-tight leading-none m-0">Door&nbsp;Status</h1>
+                     <div class="label mt-1">Café · Live Monitor</div>
+                  </div>
                </div>
-               <div>
-                  <h1 class="brand-title">DoorWatch</h1>
-                  <p class="brand-subtitle">A Data Dashboard for University Room Activity</p>
+               <div class="flex items-center gap-4 text-[11px] text-inkdim font-mono">
+                  <span id="periodPill" class="border border-line bg-panel2 px-2.5 py-1 tracking-[.3px]">
+                     <span class="text-inkfaint">period</span> <b class="text-open font-semibold">…</b>
+                  </span>
+                  <span class="flex items-center gap-1.5">
+                     <span class="w-2 h-2 rounded-full bg-open animate-inkpulse"></span>
+                     <span id="liveLabel">live · —</span>
+                  </span>
                </div>
             </div>
-
-            <div class="status-group" id="status-group">
-               <div class="status-item">
-                  <span id="status-label">Status: &mdash;</span>
-                  <span class="status-bullet">&middot;</span>
-                  <span id="last-change">Last Closed: &mdash;</span>
-               </div>
-               <div class="status-divider"></div>
-               <div class="status-item">
-                  <span id="today-date">&mdash;</span>
-               </div>
+            <div class="label mt-2 flex flex-wrap justify-between gap-2 border-t border-linesoft pt-1.5">
+               <span>Vol. SS 2026 · Lecture period</span>
+               <span>An instrument record of door state</span>
             </div>
          </header>
 
-         <main>
-            <section class="kpi-grid">
-               <article class="kpi-card">
-                  <p class="kpi-label">Definition 1 (Today Open)</p>
-                  <p class="kpi-value" id="kpi-open-today">&mdash;</p>
-                  <p class="kpi-note" id="kpi-open-today-note">&mdash; of today</p>
-               </article>
+         <!-- ── Hero: live status + rolling open-rate ── -->
+         <section class="grid gap-[14px] lg:grid-cols-[minmax(280px,1fr)_2fr] mb-[14px]">
+            <door-status></door-status>
+            <door-hero
+               fig="1"
+               heading="Rolling open rate · last 90 min"
+               note="trailing 90-min window · last 24 h"
+            ></door-hero>
+         </section>
 
-               <article class="kpi-card">
-                  <p class="kpi-label">Definition 2 (First Opened)</p>
-                  <p class="kpi-value" id="kpi-first-opened">&mdash;</p>
-                  <p class="kpi-note">first open today</p>
-               </article>
+         <!-- ── KPIs ── -->
+         <door-kpis class="mb-[14px]"></door-kpis>
 
-               <article class="kpi-card">
-                  <p class="kpi-label">Definition 3 (Avg Daily Open)</p>
-                  <p class="kpi-value" id="kpi-avg-daily">&mdash;</p>
-                  <p class="kpi-note">last 30 days</p>
-               </article>
+         <!-- ── Today timeline ── -->
+         <door-timeline
+            class="mb-[14px]"
+            fig="2"
+            heading="Today · 00:00 – 24:00"
+            note="coloured where open"
+         ></door-timeline>
 
-               <article class="kpi-card">
-                  <p class="kpi-label">Definition 4 (Active Streak)</p>
-                  <p class="kpi-value" id="kpi-opening-streak">&mdash;</p>
-                  <p class="kpi-note">consecutive days</p>
-               </article>
-            </section>
+         <!-- ── 30-day history ── -->
+         <section class="grid gap-[14px] lg:grid-cols-2 mb-[14px]">
+            <door-hours fig="3" heading="Hours open per day · 30 d" note="bar hue = period"></door-hours>
+            <door-band fig="4" heading="First open → last close · 30 d" note="band = open envelope"></door-band>
+         </section>
 
-            <section class="figure-grid">
-               <article class="figure-card">
-                  <div class="figure-head">
-                     <h2 class="figure-title">Figure 1: Daily Open Duration &mdash; Last 30 Days</h2>
-                     <span class="figure-tag">(30 days)</span>
-                  </div>
-                  <p class="figure-caption">Hours open per day. Highlighted bar = today.</p>
-                  <div class="figure-body" id="fig-daily"></div>
-               </article>
+         <!-- ── Heatmap (full width) ── -->
+         <door-heatmap
+            class="mb-[14px]"
+            fig="5"
+            heading="Open-probability heatmap · hour × weekday"
+            note="current period"
+         ></door-heatmap>
 
-               <article class="figure-card">
-                  <div class="figure-head">
-                     <h2 class="figure-title">Figure 2: Cumulative Open Time Today</h2>
-                     <span class="figure-tag">(today)</span>
-                  </div>
-                  <p class="figure-caption">Rises while open, flat while closed.</p>
-                  <div class="figure-body" id="fig-cumulative"></div>
-               </article>
+         <!-- ── Period profile by weekday + hour ── -->
+         <section class="grid gap-[14px] lg:grid-cols-2 mb-[14px]">
+            <door-weekday fig="6" heading="Open % by weekday" note="whole period"></door-weekday>
+            <door-hour fig="7" heading="Open % by hour of day" note="whole period"></door-hour>
+         </section>
 
-               <article class="figure-card">
-                  <div class="figure-head">
-                     <h2 class="figure-title">Figure 3: 24 h &times; 30 day Heatmap</h2>
-                     <span class="figure-tag">(open fraction)</span>
-                  </div>
-                  <p class="figure-caption">Each cell = 1 hour. Dark = open, light = closed.</p>
-                  <div class="figure-body" id="fig-heatmap"></div>
-               </article>
+         <!-- ── Interactive: open % by hour, per weekday ── -->
+         <door-hour-weekday
+            class="mb-[14px]"
+            fig="8"
+            heading="Open % by hour · per weekday"
+            note="click a weekday to toggle · hover to compare"
+         ></door-hour-weekday>
 
-               <article class="figure-card">
-                  <div class="figure-head">
-                     <h2 class="figure-title">Figure 4: First Open &amp; Last Close Times</h2>
-                     <span class="figure-tag">(scatter)</span>
-                  </div>
-                  <p class="figure-caption">Daily open/close clock times over 30 days.</p>
-                  <div class="figure-body" id="fig-scatter"></div>
-               </article>
+         <!-- ── Event log ── -->
+         <door-log fig="9" heading="Event log" note="most recent first"></door-log>
 
-               <article class="figure-card">
-                  <div class="figure-head">
-                     <h2 class="figure-title">Figure 5: Today's Timeline</h2>
-                     <span class="figure-tag" id="fig-gantt-tag">(0 events)</span>
-                  </div>
-                  <p class="figure-caption">24-hour view of today. Filled segments = open.</p>
-                  <div class="figure-body" id="fig-gantt"></div>
-               </article>
-
-               <article class="figure-card">
-                  <div class="figure-head">
-                     <h2 class="figure-title">Figure 6: Event Log</h2>
-                     <span class="figure-tag">(most recent)</span>
-                  </div>
-                  <p class="figure-caption">Last 30 state changes. "Held" = time since the previous change.</p>
-                  <div class="figure-body">
-                     <div class="log-wrap">
-                        <table class="log-tbl">
-                           <thead><tr><th>State</th><th>Time</th><th>Held</th></tr></thead>
-                           <tbody id="log-body"></tbody>
-                        </table>
-                     </div>
-                  </div>
-               </article>
-            </section>
-
-            <p class="footnote" id="footnote">
-               Note. All times local to the room. Date range: last 30 days including today.
-            </p>
-         </main>
+         <footer
+            class="mt-6 border-t border-line pt-3 text-[10.5px] text-inkfaint flex flex-wrap justify-between gap-2 font-serif italic"
+         >
+            <span>Comparisons scoped to the active semester / break — never across period boundaries.</span>
+            <span id="genStamp">—</span>
+         </footer>
       </div>
+      <script data-pplx-inline-edit>
+         (function () {
+            if (window === window.top) return;
 
-      <script src="renderData.js"></script>
-      <script src="api.js"></script>
+            const allowedParentOrigins = [
+               "https://www.perplexity.ai",
+               "https://perplexity.ai",
+               "https://testing.perplexity.ai",
+               "https://staging.perplexity.ai",
+               "https://*.preview.i.perplexity.ai",
+               "http://localhost:3000",
+               "http://127.0.0.1:3000",
+               "http://localhost:5173",
+               "http://127.0.0.1:5173",
+            ];
+            const MAX_FONT_BYTES = 500 * 1024;
+            const MAX_TOTAL_FONT_BYTES = 2 * 1024 * 1024;
+            let scrollForwarding = false;
+            let scrollRaf = 0;
+            let trustedTopOrigin = null;
+
+            // Allow entries like "https://*.preview.i.perplexity.ai" — the wildcard
+            // matches a single DNS label (no dots), so "https://*.foo" cannot stretch
+            // across multiple labels.
+            function matchesAllowedOrigin(origin) {
+               if (!origin) return false;
+               for (const entry of allowedParentOrigins) {
+                  if (!entry.includes("*")) {
+                     if (entry === origin) return true;
+                     continue;
+                  }
+                  const pattern = new RegExp(
+                     "^" + entry.replace(/[.+?^${}()|[\]\\]/g, "\\$&").replace(/\*/g, "[^.]+") + "$",
+                  );
+                  if (pattern.test(origin)) return true;
+               }
+               return false;
+            }
+
+            // Trust decision: when the sender is same-origin-visible (event.origin is a
+            // real origin like https://www.perplexity.ai) we trust event.origin directly.
+            // When event.origin is "null" (opaque broker srcdoc), we fall back to the
+            // broker's stamped `parentOrigin` to identify the top window. The fallback
+            // is claim-only — we rely on the browser's native `targetOrigin` enforcement
+            // on the response path (see postToTrustedTop) to ensure replies can't be
+            // delivered to anyone but the actual top window of that claimed origin.
+            function getTrustedParentOrigin(event) {
+               const forwardedParentOrigin =
+                  typeof event.data.parentOrigin === "string" ? event.data.parentOrigin : null;
+               const parentOrigin = event.origin === "null" ? forwardedParentOrigin : event.origin;
+               return matchesAllowedOrigin(parentOrigin) ? parentOrigin : null;
+            }
+
+            // All responses go to window.top with targetOrigin = the allowlisted origin.
+            // An attacker that iframes us inside their own null-origin broker can claim
+            // any parentOrigin they like, but the browser will drop the reply whenever
+            // the real top's origin doesn't match — so the screenshot never leaves.
+            function postToTrustedTop(message) {
+               if (!trustedTopOrigin) return;
+               try {
+                  window.top.postMessage(message, trustedTopOrigin);
+               } catch (_error) {}
+            }
+
+            function inlineAll(original, clone) {
+               if (original.nodeType !== 1 || clone.nodeType !== 1) return;
+
+               try {
+                  const computedStyle = getComputedStyle(original);
+                  // cssText on a computed style is the serialized declaration in modern
+                  // Chromium/Safari — a single read beats enumerating ~400 longhand
+                  // properties. Firefox returns "" here, so we fall back on empty.
+                  const serialized = computedStyle.cssText;
+                  if (serialized) {
+                     clone.style.cssText = serialized;
+                  } else {
+                     const parts = new Array(computedStyle.length);
+                     for (let index = 0; index < computedStyle.length; index += 1) {
+                        const property = computedStyle[index];
+                        parts[index] = `${property}:${computedStyle.getPropertyValue(property)};`;
+                     }
+                     clone.style.cssText = parts.join("");
+                  }
+               } catch (_error) {}
+
+               const originalChildren = original.children;
+               const clonedChildren = clone.children;
+               for (let index = 0; index < originalChildren.length && index < clonedChildren.length; index += 1) {
+                  inlineAll(originalChildren[index], clonedChildren[index]);
+               }
+            }
+
+            function extractFontUrl(srcValue) {
+               const matches = [
+                  ...srcValue.matchAll(/url\(["']?([^"')]+)["']?\)(?:\s*format\(["']?([^"')]+)["']?\))?/gi),
+               ];
+               if (matches.length === 0) return null;
+               const woff2 = matches.find((m) => m[2] && m[2].toLowerCase().includes("woff2"));
+               if (woff2) return woff2[1];
+               const woff = matches.find((m) => m[2] && m[2].toLowerCase().includes("woff"));
+               if (woff) return woff[1];
+               return matches[0][1];
+            }
+
+            // Cache resolved font URL -> data URI across captures. Fonts on a page
+            // essentially never change, and a batch run emits multiple captures back to
+            // back — without this we'd refetch + re-base64 every time.
+            const fontDataUriCache = new Map();
+            const SRC_DECLARATION_RE = /src\s*:\s*[^;}]+/i;
+
+            async function fetchAsDataUri(url) {
+               if (fontDataUriCache.has(url)) return fontDataUriCache.get(url);
+               let dataUri = null;
+               try {
+                  const response = await fetch(url, { mode: "cors", credentials: "omit" });
+                  if (response.ok) {
+                     const blob = await response.blob();
+                     if (blob.size <= MAX_FONT_BYTES) {
+                        dataUri = await new Promise((resolve) => {
+                           const reader = new FileReader();
+                           reader.onloadend = () => resolve(typeof reader.result === "string" ? reader.result : null);
+                           reader.onerror = () => resolve(null);
+                           reader.readAsDataURL(blob);
+                        });
+                     }
+                  }
+               } catch (_error) {
+                  dataUri = null;
+               }
+               fontDataUriCache.set(url, dataUri);
+               return dataUri;
+            }
+
+            function collectFontFaceRuleTexts() {
+               const rules = [];
+               for (const sheet of document.styleSheets) {
+                  let cssRules;
+                  try {
+                     cssRules = sheet.cssRules;
+                  } catch (_error) {
+                     continue;
+                  }
+                  if (!cssRules) continue;
+                  for (const rule of cssRules) {
+                     const cssText = rule.cssText || "";
+                     if (cssText.startsWith("@font-face")) rules.push(cssText);
+                  }
+               }
+               return rules;
+            }
+
+            async function buildInlinedFontCss() {
+               const ruleTexts = collectFontFaceRuleTexts();
+               if (ruleTexts.length === 0) return null;
+
+               const resolved = ruleTexts.map((cssText) => {
+                  if (!SRC_DECLARATION_RE.test(cssText)) return null;
+                  const srcMatch = cssText.match(/src\s*:\s*([^;}]+)[;}]/i);
+                  if (!srcMatch) return null;
+                  const url = extractFontUrl(srcMatch[1]);
+                  if (!url) return null;
+                  try {
+                     return { cssText, url: new URL(url, document.baseURI).href };
+                  } catch (_error) {
+                     return null;
+                  }
+               });
+
+               const dataUris = await Promise.all(
+                  resolved.map((entry) => (entry ? fetchAsDataUri(entry.url) : Promise.resolve(null))),
+               );
+
+               const inlined = [];
+               let totalBytes = 0;
+               for (let index = 0; index < resolved.length; index += 1) {
+                  const entry = resolved[index];
+                  const dataUri = dataUris[index];
+                  if (!entry || !dataUri) continue;
+                  const approxBytes = dataUri.length * 0.75;
+                  if (totalBytes + approxBytes > MAX_TOTAL_FONT_BYTES) break;
+                  totalBytes += approxBytes;
+                  inlined.push(entry.cssText.replace(SRC_DECLARATION_RE, `src: url("${dataUri}")`));
+               }
+               return inlined.length > 0 ? inlined.join("\n") : null;
+            }
+
+            function stripExternal(clone) {
+               const images = clone.querySelectorAll("img");
+               for (let index = 0; index < images.length; index += 1) {
+                  const src = images[index].getAttribute("src");
+                  if (src && !src.startsWith("data:")) images[index].removeAttribute("src");
+               }
+
+               const elements = clone.querySelectorAll("*");
+               for (let index = 0; index < elements.length; index += 1) {
+                  const style = elements[index].style.cssText;
+                  if (style && style.includes("url(")) {
+                     elements[index].style.cssText = style.replace(/url\(["']?(?!data:)[^)"']*["']?\)/gi, "none");
+                  }
+               }
+            }
+
+            function emitScroll() {
+               scrollRaf = 0;
+               if (!scrollForwarding) return;
+               postToTrustedTop({
+                  type: "INLINE_EDIT_SCROLL",
+                  scrollX: window.scrollX,
+                  scrollY: window.scrollY,
+               });
+            }
+
+            window.addEventListener(
+               "scroll",
+               function () {
+                  if (!scrollForwarding || scrollRaf) return;
+                  scrollRaf = requestAnimationFrame(emitScroll);
+               },
+               { passive: true, capture: true },
+            );
+
+            async function handleCaptureRequest(event) {
+               const requestId = event.data.requestId;
+               const scrollX = window.scrollX;
+               const scrollY = window.scrollY;
+               const width = window.innerWidth;
+               const height = window.innerHeight;
+
+               function postResult(dataUrl) {
+                  postToTrustedTop({
+                     type: "INLINE_EDIT_SCREENSHOT_RESULT",
+                     requestId,
+                     dataUrl,
+                     scrollX,
+                     scrollY,
+                  });
+               }
+
+               try {
+                  // Wait for any pending web fonts to resolve so both inline metrics and
+                  // the @font-face inlining below see the same loaded faces.
+                  if (document.fonts && document.fonts.ready) {
+                     try {
+                        await document.fonts.ready;
+                     } catch (_error) {}
+                  }
+
+                  const clone = document.documentElement.cloneNode(true);
+                  inlineAll(document.documentElement, clone);
+
+                  const removedNodes = clone.querySelectorAll('script,link[rel="stylesheet"],style');
+                  for (let index = 0; index < removedNodes.length; index += 1) {
+                     removedNodes[index].remove();
+                  }
+
+                  stripExternal(clone);
+
+                  // Re-embed web fonts as data-URI @font-face rules so the SVG rasterizer
+                  // can resolve them — external font URLs aren't fetched during
+                  // foreignObject rendering, which would otherwise force a fallback face
+                  // and change text metrics.
+                  const inlinedFontCss = await buildInlinedFontCss();
+                  if (inlinedFontCss) {
+                     const styleEl = document.createElement("style");
+                     styleEl.textContent = inlinedFontCss;
+                     const head = clone.querySelector("head");
+                     if (head) head.appendChild(styleEl);
+                     else clone.insertBefore(styleEl, clone.firstChild);
+                  }
+
+                  const html = new XMLSerializer().serializeToString(clone);
+                  const svg =
+                     `<svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${height}">` +
+                     '<foreignObject width="100%" height="100%">' +
+                     `<div xmlns="http://www.w3.org/1999/xhtml" style="width:${width}px;height:${height}px;overflow:hidden">` +
+                     `<div style="position:relative;left:-${scrollX}px;top:-${scrollY}px">` +
+                     html +
+                     "</div></div></foreignObject></svg>";
+                  const svgUrl = `data:image/svg+xml;charset=utf-8,${encodeURIComponent(svg)}`;
+                  const image = new Image();
+                  image.onload = function () {
+                     const canvas = document.createElement("canvas");
+                     canvas.width = width;
+                     canvas.height = height;
+                     canvas.getContext("2d").drawImage(image, 0, 0);
+                     postResult(canvas.toDataURL("image/png"));
+                  };
+                  image.onerror = function () {
+                     postResult(null);
+                  };
+                  image.src = svgUrl;
+               } catch (_error) {
+                  postResult(null);
+               }
+            }
+
+            window.addEventListener("message", function (event) {
+               if (!event.data) return;
+               // Only accept messages from the direct parent frame. Blocks sibling /
+               // unrelated-window postMessage senders that could otherwise reach us.
+               if (event.source !== window.parent) return;
+
+               const trustedParentOrigin = getTrustedParentOrigin(event);
+               if (!trustedParentOrigin) return;
+               trustedTopOrigin = trustedParentOrigin;
+
+               if (event.data.type === "INLINE_EDIT_SCROLL_START") {
+                  scrollForwarding = true;
+                  emitScroll();
+                  return;
+               }
+
+               if (event.data.type === "INLINE_EDIT_SCROLL_STOP") {
+                  scrollForwarding = false;
+                  if (scrollRaf) cancelAnimationFrame(scrollRaf);
+                  scrollRaf = 0;
+                  return;
+               }
+
+               if (event.data.type !== "INLINE_EDIT_CAPTURE_REQUEST") return;
+
+               handleCaptureRequest(event);
+            });
+         })();
+      </script>
    </body>
 </html>
