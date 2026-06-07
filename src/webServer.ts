@@ -107,29 +107,17 @@ function getAggregateBaseline(req: Request, res: Response) {
 const app = express();
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
-// Create a router that handles all routes relative to the mount point
-const router = express.Router();
-
-// Static files — serves www/index.html at /mathe-door-dashboard/
-router.use(express.static(path.join(__dirname, "www")));
-
-router.get("/", (_req, res) => {
-   res.sendFile(path.join(__dirname, "www", "index.html"));
-});
-
-// API routes — all paths here are relative to /mathe-door-dashboard
-router.get("/api/dashboard", getDashboardData);
-router.get("/api/status", getStatus);
-router.get("/api/events", getEvents);
-router.get("/api/semesters", getSemesters);
-router.get("/api/aggregate/daily", getAggregateDaily);
-router.get("/api/aggregate/by-weekday", getAggregateByWeekday);
-router.get("/api/aggregate/by-hour", getAggregateByHour);
-router.get("/api/aggregate/heatmap", getAggregateHeatmap);
-router.get("/api/aggregate/baseline", getAggregateBaseline);
-
-// Mount everything under /mathe-door-dashboard
-app.use("/mathe-door-dashboard", router);
+app.use(express.static(path.join(__dirname, "www")));
+app.get("/", (_req, res) => res.sendFile(path.join(__dirname, "www", "index.html")));
+app.get("/api/dashboard", getDashboardData);
+app.get("/api/status", getStatus);
+app.get("/api/events", getEvents);
+app.get("/api/semesters", getSemesters);
+app.get("/api/aggregate/daily", getAggregateDaily);
+app.get("/api/aggregate/by-weekday", getAggregateByWeekday);
+app.get("/api/aggregate/by-hour", getAggregateByHour);
+app.get("/api/aggregate/heatmap", getAggregateHeatmap);
+app.get("/api/aggregate/baseline", getAggregateBaseline);
 
 const webServer = {
    listen: () => {
