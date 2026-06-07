@@ -3,7 +3,7 @@
  * This is an ES module: everything else imports { CONFIG } from here.
  */
 export const CONFIG = {
-   API_BASE: "/api", // your backend, e.g. "https://door.example.org/api"
+   API_BASE: "/mathe-door-dashboard/api", // your backend, e.g. "https://door.example.org/api"
    POLL_MS: 15000, // live refresh interval (ms)
    USE_MOCK: false, // true = use bundled js/mock-data.js; false = fetch API_BASE
    ROLLING_WINDOW_MIN: 90, // window for the rolling open-rate hero line (Fig. 1)
