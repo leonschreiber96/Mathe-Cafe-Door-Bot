@@ -1,7 +1,7 @@
 import { ChartFigure } from "./base-figure.js";
 import { COL, gridScale, baseOpts } from "../core/chart-theme.js";
 import { hatch, crosshatch } from "../core/printed-patterns.js";
-import { WD, WD_LONG } from "../core/format.js";
+import { WEEKDAYS_SHORT, WEEKDAYS_LONG } from "../core/format.js";
 
 export class WeekdayChart extends ChartFigure {
    connectedCallback() {
@@ -20,7 +20,7 @@ export class WeekdayChart extends ChartFigure {
       const cfg = {
          type: "bar",
          data: {
-            labels: WD,
+            labels: WEEKDAYS_SHORT,
             datasets: [
                {
                   data: w.map((x) => x.open_pct),
@@ -47,7 +47,7 @@ export class WeekdayChart extends ChartFigure {
                legend: { display: false },
                tooltip: {
                   callbacks: {
-                     title: (i) => WD_LONG[i[0].dataIndex],
+                     title: (i) => WEEKDAYS_LONG[i[0].dataIndex],
                      label: (i) => `${i.parsed.y.toFixed(1)}% open`,
                   },
                },

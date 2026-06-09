@@ -8,7 +8,6 @@
  * Components are dumb renderers; this file owns the data flow and refresh cadence.
  */
 import { CONFIG } from "./config.js";
-import { pinTimezone } from "./core/format.js";
 import { applyChartDefaults } from "./core/chart-theme.js";
 
 import { StatusCard } from "./components/status-card.js";
@@ -20,6 +19,8 @@ import { WeekdayChart } from "./components/weekday-chart.js";
 import { HourChart } from "./components/hour-chart.js";
 import { HourWeekdayChart } from "./components/hour-weekday-chart.js";
 import { EventLog } from "./components/event-log.js";
+
+import { WEEKDAYS_LONG, MONTHS_LONG } from "./core/format.js";
 
 /* ── register custom elements ───────────────────────────────────────────── */
 const ELEMENTS = {
@@ -50,30 +51,14 @@ async function fetchAndDispatch() {
    window.fullData = data;
    window.dispatchEvent(new CustomEvent("door:data", { detail: data }));
 
-   const weekdays = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
-   const months = [
-      "January",
-      "February",
-      "March",
-      "April",
-      "May",
-      "June",
-      "July",
-      "August",
-      "September",
-      "October",
-      "November",
-      "December",
-   ];
    const today = new Date();
    document.getElementById("date-heading").innerHTML =
-      `${weekdays[today.getDay()]}, ${today.getDate()}. ${months[today.getMonth()]} ${today.getFullYear()}`;
+      `${WEEKDAYS_LONG[today.getDay()]}, ${today.getDate()}. ${MONTHS_LONG[today.getMonth()]} ${today.getFullYear()}`;
    document.getElementById("semester-heading").innerHTML = data.currentPeriod.label;
 }
 
 /* ── boot ───────────────────────────────────────────────────────────────── */
 async function init() {
-   pinTimezone();
    applyChartDefaults();
 
    fetchAndDispatch().catch(console.error);

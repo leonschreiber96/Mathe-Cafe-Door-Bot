@@ -1,5 +1,5 @@
 import { BaseFigure } from "./base-figure.js";
-import { WD, WD_LONG } from "../core/format.js";
+import { WEEKDAYS_SHORT, WEEKDAYS_LONG } from "../core/format.js";
 
 function heatColor(pct) {
    const t = Math.max(0, Math.min(1, pct / 100));
@@ -41,10 +41,10 @@ export class HeatmapGrid extends BaseFigure {
       for (let hr = 0; hr < 24; hr++)
          html += `<div class="text-[8.5px] text-inkfaint text-center">${hr % 3 === 0 ? hr : ""}</div>`;
       for (let wd = 0; wd < 7; wd++) {
-         html += `<div class="text-[10px] text-inkdim pr-1 text-right">${WD[wd]}</div>`;
+         html += `<div class="text-[10px] text-inkdim pr-1 text-right">${WEEKDAYS_SHORT[wd]}</div>`;
          for (let hr = 0; hr < 24; hr++) {
             const v = matrix[wd][hr];
-            html += `<div class="cell" style="background:${heatColor(v)}" title="${WD_LONG[wd]} ${String(hr).padStart(2, "0")}:00 · ${v.toFixed(0)}% open"></div>`;
+            html += `<div class="cell" style="background:${heatColor(v)}" title="${WEEKDAYS_LONG[wd]} ${String(hr).padStart(2, "0")}:00 · ${v.toFixed(0)}% open"></div>`;
          }
       }
       this.$("[data-grid]").innerHTML = html;

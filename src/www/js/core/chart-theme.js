@@ -89,7 +89,7 @@ export function baseOpts(extra = {}) {
  * tooltips render invisible. Instead zero the durations and disable property
  * tweening, leaving interaction transitions intact. */
 export function applyChartDefaults() {
-   Chart.defaults.font.family = "'JetBrains Mono', ui-monospace, monospace";
-   Chart.defaults.font.size = 10;
+   Chart.defaults.font.family = "'Computer Modern Typewriter', ui-monospace, monospace";
+   Chart.defaults.font.size = 12;
    Chart.defaults.color = COL.inkdim;
 }

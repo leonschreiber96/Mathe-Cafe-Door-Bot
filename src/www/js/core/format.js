@@ -5,8 +5,23 @@ import { CONFIG } from "../config.js";
 
 const ZONE = CONFIG.TZ || Intl.DateTimeFormat().resolvedOptions().timeZone;
 
-export const WD = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
-export const WD_LONG = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"];
+export const WEEKDAYS_SHORT = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
+export const WEEKDAYS_LONG = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"];
+export const MONTHS_SHORT = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+export const MONTHS_LONG = [
+   "January",
+   "February",
+   "March",
+   "April",
+   "May",
+   "June",
+   "July",
+   "August",
+   "September",
+   "October",
+   "November",
+   "December",
+];
 
 /* ── zone helpers ───────────────────────────────────────────────────────── */
 
@@ -92,6 +107,3 @@ export const minToHHMM = (min) => {
    const m = Math.round(min % 60);
    return `${String(h).padStart(2, "0")}:${String(m).padStart(2, "0")}`;
 };
-
-/* No-op now — Intl handles the zone natively, no global to pin. */
-export function pinTimezone() {}

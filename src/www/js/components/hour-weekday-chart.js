@@ -1,6 +1,6 @@
 import { ChartFigure } from "./base-figure.js";
 import { COL, WD_COL, gridScale, baseOpts } from "../core/chart-theme.js";
-import { WD } from "../core/format.js";
+import { WEEKDAYS_SHORT } from "../core/format.js";
 
 export class HourWeekdayChart extends ChartFigure {
    canvasHeight() {
@@ -20,7 +20,7 @@ export class HourWeekdayChart extends ChartFigure {
 
    update(openByWeekdayXHour) {
       const labels = Array.from({ length: 24 }, (_, h) => String(h).padStart(2, "0"));
-      const datasets = WD.map((wd, i) => ({
+      const datasets = WEEKDAYS_SHORT.map((wd, i) => ({
          label: wd,
          data: openByWeekdayXHour[i].slice(0, 24),
          borderColor: WD_COL[i],

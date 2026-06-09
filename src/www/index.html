@@ -104,38 +104,33 @@
          <!-- ── Hero: live status + rolling open-rate ── -->
          <section class="grid gap-[14px] lg:grid-cols-[minmax(280px,1fr)_2fr] mb-[14px]">
             <door-status></door-status>
-            <door-timeline
-               fig="1"
-               heading="Timeline of Today's Opening Hours"
-               note="coloured where open"
-            ></door-timeline>
+            <door-timeline fig="1" heading="Timeline of Today's Opening Hours" note="green = open"></door-timeline>
          </section>
 
          <!-- ── 30-day history ── -->
          <section class="grid gap-[14px] lg:grid-cols-2 mb-[14px]">
-            <door-hours fig="2" heading="Hours open per day · 30 d" note="bar hue = period"></door-hours>
-            <door-band fig="3" heading="First open → last close · 30 d" note="band = open envelope"></door-band>
+            <door-hours fig="2" heading="Hours Open per Day (Last 30 d)"></door-hours>
+            <door-band fig="3" heading="First Open → Last Close (Last 30 days)"></door-band>
          </section>
 
          <!-- ── Heatmap (full width) ── -->
          <door-heatmap
             class="mb-[14px]"
             fig="4"
-            heading="Open-probability heatmap · hour × weekday"
-            note="current period"
+            heading="Opening Heatmap Hour × Weekday (Current Period)"
          ></door-heatmap>
 
          <!-- ── Period profile by weekday + hour ── -->
          <section class="grid gap-[14px] lg:grid-cols-2 mb-[14px]">
-            <door-weekday fig="5" heading="Open % by weekday" note="current period"></door-weekday>
-            <door-hour fig="6" heading="Open % by hour of day" note="current period"></door-hour>
+            <door-weekday fig="5" heading="Open by Weekday (Current Period)"></door-weekday>
+            <door-hour fig="6" heading="Open by Hour of Day (Current Period)"></door-hour>
          </section>
 
          <!-- ── Interactive: open % by hour, per weekday ── -->
          <door-hour-weekday
             class="mb-[14px]"
             fig="7"
-            heading="Open % by hour · per weekday"
+            heading="Open by Hour per Weekday (Current Period)"
             note="click a weekday to toggle · hover to compare"
          ></door-hour-weekday>
 
