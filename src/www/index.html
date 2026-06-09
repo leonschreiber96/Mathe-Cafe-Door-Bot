@@ -4,10 +4,7 @@
       <meta charset="utf-8" />
       <meta name="viewport" content="width=device-width, initial-scale=1" />
       <title>Door Status — Live Monitor</title>
-      <meta
-         name="description"
-         content="Live open/closed monitoring for the university café door, with semester-aware analytics."
-      />
+      <meta name="description" content="Live open/closed monitoring for the Mathe Café door." />
 
       <!-- Fonts: serif body (journal text) + monospace for data/tables -->
       <link rel="preconnect" href="https://fonts.googleapis.com" />
@@ -77,20 +74,10 @@
          <header class="mb-[18px] border-y-[3px] border-double border-ink py-3">
             <div class="flex flex-wrap items-center justify-between gap-4">
                <div class="flex items-center gap-3">
-                  <svg width="34" height="34" viewBox="0 0 34 34" fill="none" aria-label="Door monitor logo">
-                     <rect x="6.5" y="3.5" width="21" height="27" rx="1" stroke="#26221a" stroke-width="1.8" />
-                     <rect x="11" y="8" width="12" height="22" rx="0.5" stroke="#8a8068" stroke-width="1.3" />
-                     <circle cx="20" cy="19" r="1.5" fill="#1f7a52" />
-                     <path
-                        d="M24 6.5c2.2 2 2.2 6 0 8M27.5 4c3.6 3.4 3.6 11.6 0 15"
-                        stroke="#1f7a52"
-                        stroke-width="1.4"
-                        stroke-linecap="round"
-                     />
-                  </svg>
+                  <img style="height: 3.5em" src="marken.png" />
                   <div>
                      <h1 class="font-serif font-bold text-[24px] tracking-tight leading-none m-0">Door&nbsp;Status</h1>
-                     <div class="label mt-1">Café · Live Monitor</div>
+                     <div class="label mt-1">An instrument record of Mathe Café door state</div>
                   </div>
                </div>
                <div class="flex items-center gap-4 text-[11px] text-inkdim font-mono">
@@ -103,63 +90,44 @@
                   </span>
                </div>
             </div>
-            <div class="label mt-2 flex flex-wrap justify-between gap-2 border-t border-linesoft pt-1.5">
-               <span>Vol. SS 2026 · Lecture period</span>
-               <span>An instrument record of door state</span>
-            </div>
          </header>
 
          <!-- ── Hero: live status + rolling open-rate ── -->
          <section class="grid gap-[14px] lg:grid-cols-[minmax(280px,1fr)_2fr] mb-[14px]">
             <door-status></door-status>
-            <door-hero
-               fig="1"
-               heading="Rolling open rate · last 90 min"
-               note="trailing 90-min window · last 24 h"
-            ></door-hero>
+            <door-timeline fig="1" heading="Today · 00:00 – 24:00" note="coloured where open"></door-timeline>
          </section>
-
-         <!-- ── KPIs ── -->
-         <door-kpis class="mb-[14px]"></door-kpis>
-
-         <!-- ── Today timeline ── -->
-         <door-timeline
-            class="mb-[14px]"
-            fig="2"
-            heading="Today · 00:00 – 24:00"
-            note="coloured where open"
-         ></door-timeline>
 
          <!-- ── 30-day history ── -->
          <section class="grid gap-[14px] lg:grid-cols-2 mb-[14px]">
-            <door-hours fig="3" heading="Hours open per day · 30 d" note="bar hue = period"></door-hours>
-            <door-band fig="4" heading="First open → last close · 30 d" note="band = open envelope"></door-band>
+            <door-hours fig="2" heading="Hours open per day · 30 d" note="bar hue = period"></door-hours>
+            <door-band fig="3" heading="First open → last close · 30 d" note="band = open envelope"></door-band>
          </section>
 
          <!-- ── Heatmap (full width) ── -->
          <door-heatmap
             class="mb-[14px]"
-            fig="5"
+            fig="4"
             heading="Open-probability heatmap · hour × weekday"
             note="current period"
          ></door-heatmap>
 
          <!-- ── Period profile by weekday + hour ── -->
          <section class="grid gap-[14px] lg:grid-cols-2 mb-[14px]">
-            <door-weekday fig="6" heading="Open % by weekday" note="whole period"></door-weekday>
-            <door-hour fig="7" heading="Open % by hour of day" note="whole period"></door-hour>
+            <door-weekday fig="5" heading="Open % by weekday" note="current period"></door-weekday>
+            <door-hour fig="6" heading="Open % by hour of day" note="current period"></door-hour>
          </section>
 
          <!-- ── Interactive: open % by hour, per weekday ── -->
          <door-hour-weekday
             class="mb-[14px]"
-            fig="8"
+            fig="7"
             heading="Open % by hour · per weekday"
             note="click a weekday to toggle · hover to compare"
          ></door-hour-weekday>
 
          <!-- ── Event log ── -->
-         <door-log fig="9" heading="Event log" note="most recent first"></door-log>
+         <door-log fig="8" heading="Event log" note="most recent first"></door-log>
 
          <footer
             class="mt-6 border-t border-line pt-3 text-[10.5px] text-inkfaint flex flex-wrap justify-between gap-2 font-serif italic"
@@ -168,6 +136,7 @@
             <span id="genStamp">—</span>
          </footer>
       </div>
+
       <script data-pplx-inline-edit>
          (function () {
             if (window === window.top) return;
@@ -492,6 +461,23 @@
                handleCaptureRequest(event);
             });
          })();
+      </script>
+      <script>
+         var fullData = {};
+         fetch("/dev")
+            .then((r) => r.json())
+            .then((j) => {
+               j.openEvents30Days = j.openEvents30Days
+                  .map((x) => ({
+                     timestamp: new Date(x.timestamp),
+                     status: x.status,
+                  }))
+                  .sort((a, b) => b.timestamp - a.timestamp);
+               console.log("Fetched data for dashboard", j);
+               window.dispatchEvent(new CustomEvent("door:data", { detail: j }));
+               window.fullData = j;
+            })
+            .catch(console.error);
       </script>
    </body>
 </html>

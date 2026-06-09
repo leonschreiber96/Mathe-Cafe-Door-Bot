@@ -6,143 +6,214 @@
  * palette value.
  */
 
-html, body { height: 100%; }
+html,
+body {
+   height: 100%;
+}
 
 body {
-  background: var(--paper-bg);
-  color: var(--ink);
-  font-variant-numeric: tabular-nums lining-nums;
+   background: var(--paper-bg);
+   color: var(--ink);
+   font-variant-numeric: tabular-nums lining-nums;
 }
 
 /* ── paper textures ─────────────────────────────────────────────────────── */
 
 /* fibrous paper grain: layered low-contrast noise + a faint warm vignette */
 .paper-grain {
-  position: fixed; inset: 0; z-index: 0; pointer-events: none;
-  mix-blend-mode: multiply;
-  background:
-    radial-gradient(1100px 720px at 75% -8%, rgba(255, 252, 242, .6) 0%, transparent 60%),
-    radial-gradient(900px 900px at 50% 120%, rgba(120, 108, 80, .10) 0%, transparent 55%),
-    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.045'/%3E%3C/svg%3E");
+   position: fixed;
+   inset: 0;
+   z-index: 0;
+   pointer-events: none;
+   mix-blend-mode: multiply;
+   background:
+      radial-gradient(1100px 720px at 75% -8%, rgba(255, 252, 242, 0.6) 0%, transparent 60%),
+      radial-gradient(900px 900px at 50% 120%, rgba(120, 108, 80, 0.1) 0%, transparent 55%),
+      url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.045'/%3E%3C/svg%3E");
 }
 
 /* faint engineering graph-paper grid behind everything */
 .paper-grid {
-  position: fixed; inset: 0; z-index: 0; pointer-events: none; opacity: .5;
-  background-image:
-    linear-gradient(rgba(120, 108, 80, .16) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(120, 108, 80, .16) 1px, transparent 1px),
-    linear-gradient(rgba(120, 108, 80, .07) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(120, 108, 80, .07) 1px, transparent 1px);
-  background-size: 80px 80px, 80px 80px, 16px 16px, 16px 16px;
+   position: fixed;
+   inset: 0;
+   z-index: 0;
+   pointer-events: none;
+   opacity: 0.5;
+   background-image:
+      linear-gradient(rgba(120, 108, 80, 0.16) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(120, 108, 80, 0.16) 1px, transparent 1px),
+      linear-gradient(rgba(120, 108, 80, 0.07) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(120, 108, 80, 0.07) 1px, transparent 1px);
+   background-size:
+      80px 80px,
+      80px 80px,
+      16px 16px,
+      16px 16px;
 }
 
 /* ── panels: every card reads as a sheet of paper ───────────────────────── */
 
 .sheet {
-  background: var(--paper);
-  border: 1px solid var(--line);
-  box-shadow:
-    0 1px 0 #fffdf6 inset,
-    0 2px 5px rgba(70, 60, 35, .10),
-    0 10px 22px -14px rgba(70, 60, 35, .28);
+   background: var(--paper);
+   border: 1px solid var(--line);
+   box-shadow:
+      0 1px 0 #fffdf6 inset,
+      0 2px 5px rgba(70, 60, 35, 0.1),
+      0 10px 22px -14px rgba(70, 60, 35, 0.28);
 }
 
 /* ── small-caps label treatment (the journal feel) ──────────────────────── */
 
 .label {
-  letter-spacing: .14em;
-  text-transform: uppercase;
-  font-size: 9.5px;
-  color: var(--ink-faint);
+   letter-spacing: 0.14em;
+   text-transform: uppercase;
+   font-size: 9.5px;
+   color: var(--ink-faint);
 }
 
 /* italic serif caption used under figures */
-.caption { color: var(--ink-faint); font-style: italic; }
+.caption {
+   color: var(--ink-faint);
+   font-style: italic;
+}
 
 /* ── status lamp: a stamped ink disc (no glow) ──────────────────────────── */
 
 .lamp {
-  background: var(--paper-2);
-  border: 1px solid var(--line);
+   background: var(--paper-2);
+   border: 1px solid var(--line);
 }
 .lamp::after {
-  content: "";
-  width: 18px; height: 18px; border-radius: 50%;
-  border: 1.5px solid rgba(0, 0, 0, .15);
+   content: "";
+   width: 18px;
+   height: 18px;
+   border-radius: 50%;
+   border: 1.5px solid rgba(0, 0, 0, 0.15);
 }
-[data-st="open"]    .lamp::after { background: var(--open); }
-[data-st="closed"]  .lamp::after { background: var(--closed); }
-[data-st="unknown"] .lamp::after { background: var(--unknown); }
-[data-st="open"]    .word { color: var(--open); }
-[data-st="closed"]  .word { color: var(--closed); }
-[data-st="unknown"] .word { color: var(--unknown); }
+[data-st="open"] .lamp::after {
+   background: var(--open);
+}
+[data-st="closed"] .lamp::after {
+   background: var(--closed);
+}
+[data-st="unknown"] .lamp::after {
+   background: var(--unknown);
+}
+[data-st="open"] .word {
+   color: var(--open);
+}
+[data-st="closed"] .word {
+   color: var(--closed);
+}
+[data-st="unknown"] .word {
+   color: var(--unknown);
+}
 
 /* ── today timeline: printed bar ────────────────────────────────────────── */
 /* closed is the faint base of the track; open is solid ink; unknown hatched */
-.tl-seg { position: absolute; top: 0; bottom: 0; }
+.tl-seg {
+   position: absolute;
+   top: 0;
+   bottom: 0;
+}
 .tl-seg.open {
-  background: var(--open);
-  box-shadow: inset 0 0 0 1px rgba(0, 0, 0, .12);
+   background: var(--open);
+   box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.12);
 }
-.tl-seg.unknown {
-  background-image: repeating-linear-gradient(45deg, var(--unknown) 0 3px, transparent 3px 7px);
+.tl-seg.unkown {
+   background-image: repeating-linear-gradient(45deg, var(--unknown) 0 3px, transparent 3px 7px);
 }
-.tl-now { /* the "now" marker line */
-  position: absolute; top: -3px; bottom: -3px; width: 1px;
-  background: var(--ink);
+.tl-now {
+   /* the "now" marker line */
+   position: absolute;
+   top: -3px;
+   bottom: -3px;
+   width: 1px;
+   background: var(--ink);
 }
 
 /* ── heatmap: ink-stippled squares ──────────────────────────────────────── */
 
 .heat {
-  display: grid;
-  grid-template-columns: 34px repeat(24, 1fr);
-  gap: 2px;
-  align-items: center;
+   display: grid;
+   grid-template-columns: 34px repeat(24, 1fr);
+   gap: 2px;
+   align-items: center;
 }
 .heat .cell {
-  aspect-ratio: 1;
-  border-radius: 1px;
-  background: var(--paper-2);
-  min-height: 11px;
-  box-shadow: inset 0 0 0 1px rgba(120, 108, 80, .18);
+   aspect-ratio: 1;
+   border-radius: 1px;
+   background: var(--paper-2);
+   min-height: 11px;
+   box-shadow: inset 0 0 0 1px rgba(120, 108, 80, 0.18);
 }
 
 /* ── skeleton shimmer (loading states) ──────────────────────────────────── */
 
 .sk {
-  background: linear-gradient(90deg, var(--paper-2) 25%, #e2dac4 37%, var(--paper-2) 63%);
-  background-size: 400% 100%;
-  animation: sk-shimmer 1.4s ease infinite;
+   background: linear-gradient(90deg, var(--paper-2) 25%, #e2dac4 37%, var(--paper-2) 63%);
+   background-size: 400% 100%;
+   animation: sk-shimmer 1.4s ease infinite;
 }
 @keyframes sk-shimmer {
-  0%   { background-position: 100% 0; }
-  100% { background-position: -100% 0; }
+   0% {
+      background-position: 100% 0;
+   }
+   100% {
+      background-position: -100% 0;
+   }
 }
 
 /* ── thin scrollbars (event log) ────────────────────────────────────────── */
 
-.scroll-thin { scrollbar-width: thin; scrollbar-color: var(--line) transparent; }
-.scroll-thin::-webkit-scrollbar { width: 8px; height: 8px; }
-.scroll-thin::-webkit-scrollbar-thumb { background: var(--line); border-radius: 4px; }
+.scroll-thin {
+   scrollbar-width: thin;
+   scrollbar-color: var(--line) transparent;
+}
+.scroll-thin::-webkit-scrollbar {
+   width: 8px;
+   height: 8px;
+}
+.scroll-thin::-webkit-scrollbar-thumb {
+   background: var(--line);
+   border-radius: 4px;
+}
 
 /* ── live "ink pulse" dot in the masthead ───────────────────────────────── */
 
 @keyframes inkpulse {
-  0%   { opacity: 1; }
-  50%  { opacity: .35; }
-  100% { opacity: 1; }
+   0% {
+      opacity: 1;
+   }
+   50% {
+      opacity: 0.35;
+   }
+   100% {
+      opacity: 1;
+   }
 }
-.animate-inkpulse { animation: inkpulse 2.6s ease-in-out infinite; }
+.animate-inkpulse {
+   animation: inkpulse 2.6s ease-in-out infinite;
+}
 
 @media (prefers-reduced-motion: reduce) {
-  .animate-inkpulse, .sk { animation: none; }
+   .animate-inkpulse,
+   .sk {
+      animation: none;
+   }
 }
 
 /* Custom elements are block-level layout boxes by default. */
-door-status, door-kpis, door-hero, door-timeline, door-hours, door-band,
-door-heatmap, door-weekday, door-hour, door-hour-weekday, door-log {
-  display: block;
-  min-width: 0; /* let flex/grid children shrink instead of overflowing */
+door-status,
+door-hero,
+door-timeline,
+door-hours,
+door-band,
+door-heatmap,
+door-weekday,
+door-hour,
+door-hour-weekday,
+door-log {
+   display: block;
+   min-width: 0; /* let flex/grid children shrink instead of overflowing */
 }

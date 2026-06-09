@@ -1,10 +1,3 @@
-/* components/hour-weekday-chart.js — <door-hour-weekday> (Fig. 8)
- *
- * One open-% line per weekday from the heatmap matrix[weekday][hour]. The
- * Chart.js legend is shown so users can click to hide/show a weekday; hovering
- * gives an index-mode tooltip comparing every visible weekday at that hour.
- * Muted ink tones; weekends dashed. Logic-only: update(heat).
- */
 import { ChartFigure } from "./base-figure.js";
 import { COL, WD_COL, gridScale, baseOpts } from "../core/chart-theme.js";
 import { WD } from "../core/format.js";
@@ -14,16 +7,26 @@ export class HourWeekdayChart extends ChartFigure {
       return 300;
    }
 
-   update(heat) {
-      const m = heat.matrix; // [weekday][hour]
+   connectedCallback() {
+      super.connectedCallback?.();
+      this._onData = (e) => this.update(e.detail.openByWeekdayXHour);
+      window.addEventListener("door:data", this._onData);
+      if (window.fullData) this.update(window.fullData.openByWeekdayXHour);
+   }
+
+   disconnectedCallback() {
+      window.removeEventListener("door:data", this._onData);
+   }
+
+   update(openByWeekdayXHour) {
       const labels = Array.from({ length: 24 }, (_, h) => String(h).padStart(2, "0"));
       const datasets = WD.map((wd, i) => ({
          label: wd,
-         data: m[i].slice(0, 24),
+         data: openByWeekdayXHour[i].slice(0, 24),
          borderColor: WD_COL[i],
          backgroundColor: WD_COL[i],
          borderWidth: 1.4,
-         borderDash: i >= 5 ? [5, 3] : [], // dash weekends so they read apart
+         borderDash: i >= 5 ? [5, 3] : [],
          tension: 0.35,
          pointRadius: 0,
          pointHoverRadius: 4,
@@ -75,3 +78,5 @@ export class HourWeekdayChart extends ChartFigure {
       this.upsert(cfg);
    }
 }
+
+customElements.define("door-hour-weekday", HourWeekdayChart);

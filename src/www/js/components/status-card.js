@@ -4,16 +4,13 @@
  * Owns a stamped ink lamp, the big status word, the "since …" line, and two
  * inset stats (first open today, open streak). Logic-only update(status).
  */
-import { fmtTime } from "../core/format.js";
-import { now } from "../core/data-service.js";
 
 export class StatusCard extends HTMLElement {
-  connectedCallback() {
-    if (this._built) return;
-    this._built = true;
-    this.dataset.st = "unknown";
-    this.classList.add("rounded-panel", "sheet", "p-4", "flex", "flex-col", "gap-[14px]", "min-w-0");
-    this.innerHTML = `
+   connectedCallback() {
+      if (this._built) return;
+      this._built = true;
+      this.classList.add("rounded-panel", "sheet", "p-4", "flex", "flex-col", "gap-[14px]", "min-w-0");
+      this.innerHTML = `
       <div class="flex items-center gap-[14px]">
         <div class="lamp w-[54px] h-[54px] rounded-[3px] grid place-items-center shrink-0"></div>
         <div>
@@ -31,19 +28,49 @@ export class StatusCard extends HTMLElement {
           <div class="font-mono text-[16px] mt-[3px]" data-streak>— <small class="text-[10px] text-inkdim">days</small></div>
         </div>
       </div>`;
-  }
 
-  update(st) {
-    if (!st) { this.dataset.st = "unknown"; return; }
-    this.dataset.st = st.status;
-    this.querySelector("[data-word]").textContent = st.status.toUpperCase();
+      this._onData = (e) => this.update(e.detail);
+      window.addEventListener("door:data", this._onData);
+      if (window.fullData) this.update(window.fullData);
+   }
 
-    const since = new Date(st.since);
-    const mins = Math.round((now().getTime() - since) / 60000);
-    const dur = mins < 60 ? `${mins} min` : `${Math.floor(mins / 60)} h ${mins % 60} min`;
-    this.querySelector("[data-since]").innerHTML = `since <b>${fmtTime(since)}</b> · ${dur}`;
-    this.querySelector("[data-first]").textContent = st.first_open_today ? fmtTime(st.first_open_today) : "not yet";
-    this.querySelector("[data-streak]").innerHTML =
-      `${st.open_streak_days} <small class="text-[10px] text-inkdim">days</small>`;
-  }
+   disconnectedCallback() {
+      window.removeEventListener("door:data", this._onData);
+   }
+
+   updateStatus(lastEvent) {
+      // Status word
+      this.dataset.st = lastEvent.status.toLowerCase();
+      this.querySelector("[data-word]").textContent = lastEvent.status.toUpperCase();
+
+      // Time since last event
+      const msSince = new Date() - lastEvent.timestamp;
+      const totalMins = Math.floor(msSince / 60_000);
+      const hours = Math.floor(totalMins / 60);
+      const mins = totalMins % 60;
+
+      const lastEventTimeText = lastEvent.timestamp.toLocaleTimeString("de-DE", {
+         hour: "2-digit",
+         minute: "2-digit",
+      });
+      const timeElapsedText = hours > 0 ? `${hours} h ${mins} min` : `${mins} min`;
+
+      this.querySelector("[data-since]").innerHTML = `since <b>${lastEventTimeText}</b> · ${timeElapsedText}`;
+   }
+
+   update(fullData) {
+      const lastEvent = fullData.openEvents30Days[0];
+      this.updateStatus(lastEvent);
+
+      const todayStr = new Date().toLocaleDateString("sv");
+      const firstOpenToday = fullData.openEvents30Days
+         .filter((x) => x.timestamp.toLocaleDateString("sv") === todayStr)
+         .find((x) => x.status === "OPEN");
+
+      this.querySelector("[data-first]").textContent = firstOpenToday
+         ? firstOpenToday.timestamp.toLocaleTimeString("de-DE", { hour: "2-digit", minute: "2-digit" })
+         : "not yet";
+
+      this.querySelector("[data-streak]").textContent = `🔥 ${fullData.openingStreak} days`;
+   }
 }

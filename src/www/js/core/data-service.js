@@ -44,14 +44,111 @@ export const get = {
       return computeStatusFromEvents(ev, now());
    },
 };
+// Returns [{ date, open_hours, period_id, first_open, last_close }, ...]
+export function dailyStats(events) {
+   const sorted = [...events]
+      .map((e) => ({ ...e, timestamp: new Date(e.timestamp) }))
+      .sort((a, b) => a.timestamp - b.timestamp);
+
+   // Collect all dates that appear in the events
+   const dates = [...new Set(sorted.map((e) => e.timestamp.toISOString().slice(0, 10)))];
+
+   return dates.map((date) => {
+      const dayStart = new Date(date + "T00:00:00");
+      const dayEnd = new Date(date + "T24:00:00");
+      const isToday = date === new Date().toISOString().slice(0, 10);
+      const effectiveEnd = isToday ? new Date() : dayEnd;
+
+      const carryIn = sorted.filter((e) => e.timestamp < dayStart).at(-1);
+      const dayEvts = sorted.filter((e) => e.timestamp >= dayStart && e.timestamp < dayEnd);
+
+      const anchors = [];
+      if (carryIn) anchors.push({ timestamp: dayStart, status: carryIn.status });
+      anchors.push(...dayEvts);
+
+      let openMs = 0;
+      let first_open = null;
+      let last_close = null;
+
+      for (let i = 0; i < anchors.length; i++) {
+         const start = anchors[i].timestamp;
+         const end = anchors[i + 1]?.timestamp ?? effectiveEnd;
+         const status = anchors[i].status;
+
+         if (status === "OPEN") {
+            openMs += end - start;
+            if (!first_open) first_open = start.toISOString();
+            last_close = end.toISOString(); // updated each open segment
+         }
+      }
+
+      return {
+         date,
+         open_hours: openMs / 3_600_000,
+         period_id: "lecture",
+         first_open, // ISO string or null if never opened
+         last_close, // ISO string of when last open segment ended
+      };
+   });
+}
+
+// Returns [{ date: "2026-06-09", open_hours: 5.3 }, ...]
+export function dailyOpenHours(events) {
+   const map = new Map();
+
+   const sorted = [...events]
+      .map((e) => ({ ...e, timestamp: new Date(e.timestamp) }))
+      .sort((a, b) => a.timestamp - b.timestamp);
+
+   // Group events by date
+   const byDate = new Map();
+   for (const e of sorted) {
+      const key = e.timestamp.toISOString().slice(0, 10);
+      if (!byDate.has(key)) byDate.set(key, []);
+      byDate.get(key).push(e);
+   }
+
+   for (const [date, evts] of byDate) {
+      const dayStart = new Date(date + "T00:00:00");
+      const dayEnd = new Date(date + "T24:00:00");
+      const isToday = date === new Date().toISOString().slice(0, 10);
+      const effectiveEnd = isToday ? new Date() : dayEnd;
+
+      // Build anchors same as todaySegments
+      const allSorted = [...events]
+         .map((e) => ({ ...e, timestamp: new Date(e.timestamp) }))
+         .sort((a, b) => a.timestamp - b.timestamp);
+
+      const carryIn = allSorted.filter((e) => e.timestamp < dayStart).at(-1);
+      const dayEvts = allSorted.filter((e) => e.timestamp >= dayStart && e.timestamp < dayEnd);
+
+      const anchors = [];
+      if (carryIn) anchors.push({ timestamp: dayStart, status: carryIn.status });
+      anchors.push(...dayEvts);
+
+      let openMs = 0;
+      for (let i = 0; i < anchors.length; i++) {
+         if (anchors[i].status !== "OPEN") continue;
+         const start = anchors[i].timestamp;
+         const end = anchors[i + 1]?.timestamp ?? effectiveEnd;
+         openMs += end - start;
+      }
+
+      map.set(date, openMs / 3_600_000);
+   }
+
+   return Array.from(map.entries())
+      .sort(([a], [b]) => a.localeCompare(b))
+      .map(([date, open_hours]) => ({ date, open_hours, period_id: "lecture" }));
+}
 
 /* ── interval helpers ───────────────────────────────────────────────────── */
 /* Turn change-events into [{start,end,status}]; last interval runs to `until`. */
 export function intervals(events, until) {
    const out = [];
    for (let i = 0; i < events.length; i++) {
-      const start = new Date(events[i].event_time);
-      const end = i + 1 < events.length ? new Date(events[i + 1].event_time) : until;
+      const start = events[i].timestamp;
+      const end = i + 1 < events.length ? events[i + 1].timestamp : until;
       out.push({ start, end, status: events[i].status });
    }
    return out;

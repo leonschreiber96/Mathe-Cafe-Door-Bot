@@ -15,34 +15,30 @@ import { pinTimezone, fmtTime } from "./core/format.js";
 import { applyChartDefaults } from "./core/chart-theme.js";
 import { get, now } from "./core/data-service.js";
 
-import { StatusCard }       from "./components/status-card.js";
-import { KpiGrid }          from "./components/kpi-grid.js";
-import { HeroChart }        from "./components/hero-chart.js";
-import { TimelineStrip }    from "./components/timeline-strip.js";
-import { HoursChart }       from "./components/hours-chart.js";
-import { BandChart }        from "./components/band-chart.js";
-import { HeatmapGrid }      from "./components/heatmap-grid.js";
-import { WeekdayChart }     from "./components/weekday-chart.js";
-import { HourChart }        from "./components/hour-chart.js";
+import { StatusCard } from "./components/status-card.js";
+import { TimelineStrip } from "./components/timeline-strip.js";
+import { HoursChart } from "./components/hours-chart.js";
+import { BandChart } from "./components/band-chart.js";
+import { HeatmapGrid } from "./components/heatmap-grid.js";
+import { WeekdayChart } from "./components/weekday-chart.js";
+import { HourChart } from "./components/hour-chart.js";
 import { HourWeekdayChart } from "./components/hour-weekday-chart.js";
-import { EventLog }         from "./components/event-log.js";
+import { EventLog } from "./components/event-log.js";
 
 /* ── register custom elements ───────────────────────────────────────────── */
 const ELEMENTS = {
-  "door-status":       StatusCard,
-  "door-kpis":         KpiGrid,
-  "door-hero":         HeroChart,
-  "door-timeline":     TimelineStrip,
-  "door-hours":        HoursChart,
-  "door-band":         BandChart,
-  "door-heatmap":      HeatmapGrid,
-  "door-weekday":      WeekdayChart,
-  "door-hour":         HourChart,
-  "door-hour-weekday": HourWeekdayChart,
-  "door-log":          EventLog,
+   "door-status": StatusCard,
+   "door-timeline": TimelineStrip,
+   "door-hours": HoursChart,
+   "door-band": BandChart,
+   "door-heatmap": HeatmapGrid,
+   "door-weekday": WeekdayChart,
+   "door-hour": HourChart,
+   "door-hour-weekday": HourWeekdayChart,
+   "door-log": EventLog,
 };
 for (const [tag, cls] of Object.entries(ELEMENTS)) {
-  if (!customElements.get(tag)) customElements.define(tag, cls);
+   if (!customElements.get(tag)) customElements.define(tag, cls);
 }
 
 const $ = (sel) => document.querySelector(sel);
@@ -54,69 +50,69 @@ let periods = null;
 
 /* ── live tick: cheap, frequent ─────────────────────────────────────────── */
 async function tick() {
-  try {
-    const [st, ev] = await Promise.all([get.status(), get.events()]);
-    el("door-status").update(st);
-    el("door-hero").update(ev.events);
-    el("door-timeline").update(ev.events);
-    if (boot.baseline && boot.daily) {
-      el("door-kpis").update({ status: st, baseline: boot.baseline, daily: boot.daily });
-    }
-    $("#liveLabel").textContent = "live · " + fmtTime(now());
-  } catch (e) {
-    console.error(e);
-    $("#liveLabel").textContent = "offline";
-  }
+   try {
+      const [st, ev] = await Promise.all([get.status(), get.events()]);
+      el("door-status").update(st);
+      el("door-hero").update(ev.events);
+      el("door-timeline").update(ev.events);
+      $("#liveLabel").textContent = "live · " + fmtTime(now());
+   } catch (e) {
+      console.error(e);
+      $("#liveLabel").textContent = "offline";
+   }
 }
 
 /* ── boot: load everything once, render all figures ─────────────────────── */
 async function init() {
-  pinTimezone();
-  applyChartDefaults();
+   pinTimezone();
+   applyChartDefaults();
 
-  try {
-    const sem = await get.semesters();
-    periods = sem.periods;
-    const pid = sem.current_period_id;
-    const cp = periods.find((p) => p.id === pid);
-    const periodLabel = cp ? cp.label : pid;
-    $("#periodPill").innerHTML =
-      `<span class="text-inkfaint">period</span> <b class="text-open font-semibold">${periodLabel}</b>`;
-    el("door-heatmap").setNote(periodLabel);
+   try {
+      const sem = await get.semesters();
+      periods = sem.periods;
+      const pid = sem.current_period_id;
+      const cp = periods.find((p) => p.id === pid);
+      const periodLabel = cp ? cp.label : pid;
+      $("#periodPill").innerHTML =
+         `<span class="text-inkfaint">period</span> <b class="text-open font-semibold">${periodLabel}</b>`;
+      el("door-heatmap").setNote(periodLabel);
 
-    const [ev, daily, byWd, byHr, heat, baseline] = await Promise.all([
-      get.events(), get.daily(), get.byWeekday(pid), get.byHour(pid),
-      get.heatmap(pid), get.baseline(pid),
-    ]);
-    boot.daily = daily;
-    boot.baseline = baseline;
+      const [ev, daily, byWd, byHr, heat, baseline] = await Promise.all([
+         get.events(),
+         get.daily(),
+         get.byWeekday(pid),
+         get.byHour(pid),
+         get.heatmap(pid),
+         get.baseline(pid),
+      ]);
+      boot.daily = daily;
+      boot.baseline = baseline;
 
-    const st = await get.status();
-    el("door-status").update(st);
-    el("door-kpis").update({ status: st, baseline, daily });
-    el("door-hero").update(ev.events);
-    el("door-timeline").update(ev.events);
-    el("door-hours").update({ daily, periods });
-    el("door-band").update(daily);
-    el("door-weekday").update(byWd);
-    el("door-hour").update(byHr);
-    el("door-heatmap").update(heat);
-    el("door-hour-weekday").update(heat);
-    el("door-log").update(ev.events);
+      const st = await get.status();
+      el("door-status").update(st);
+      el("door-hero").update(ev.events);
+      el("door-timeline").update(ev.events);
+      el("door-hours").update({ daily, periods });
+      el("door-band").update(daily);
+      el("door-weekday").update(byWd);
+      el("door-hour").update(byHr);
+      el("door-heatmap").update(heat);
+      el("door-hour-weekday").update(heat);
+      el("door-log").update(ev.events);
 
-    const stamp = window.DOOR_MOCK?.generated_at || now();
-    $("#genStamp").textContent = "data generated " + new Date(stamp).toLocaleString();
-    $("#liveLabel").textContent = "live · " + fmtTime(now());
-  } catch (e) {
-    console.error("init failed", e);
-    $("#liveLabel").textContent = "load error";
-  }
+      const stamp = window.DOOR_MOCK?.generated_at || now();
+      $("#genStamp").textContent = "data generated " + new Date(stamp).toLocaleString();
+      $("#liveLabel").textContent = "live · " + fmtTime(now());
+   } catch (e) {
+      console.error("init failed", e);
+      $("#liveLabel").textContent = "load error";
+   }
 
-  setInterval(tick, CONFIG.POLL_MS);
+   setInterval(tick, CONFIG.POLL_MS);
 }
 
 if (document.readyState === "loading") {
-  document.addEventListener("DOMContentLoaded", init);
+   document.addEventListener("DOMContentLoaded", init);
 } else {
-  init();
+   init();
 }

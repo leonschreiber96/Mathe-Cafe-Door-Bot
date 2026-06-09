@@ -20,21 +20,22 @@
  * shadow trees.
  */
 export class BaseFigure extends HTMLElement {
-  connectedCallback() {
-    if (this._built) return;       // guard against re-entrancy
-    this._built = true;
-    this.classList.add("rounded-panel", "sheet", "min-w-0");
-    this.innerHTML = `
-      ${this.headerHTML()}
-      <div class="p-[14px]">${this.bodyHTML()}</div>`;
-    this.afterRender?.();
-  }
+   connectedCallback() {
+      if (this._built) return; // guard against re-entrancy
+      this._built = true;
+      this.classList.add("rounded-panel", "sheet", "min-w-0");
+      this.innerHTML = `
+         ${this.headerHTML()}
+         <div class="p-[14px]">${this.bodyHTML()}</div>
+      `;
+      this.afterRender?.();
+   }
 
-  headerHTML() {
-    const fig = this.getAttribute("fig");
-    const heading = this.getAttribute("heading") || "";
-    const note = this.getAttribute("note");
-    return `
+   headerHTML() {
+      const fig = this.getAttribute("fig");
+      const heading = this.getAttribute("heading") || "";
+      const note = this.getAttribute("note");
+      return `
       <div class="flex items-baseline justify-between gap-2 px-[14px] py-2.5 border-b border-linesoft">
         <div>
           ${fig ? `<div class="label !text-[10px]">Fig. ${fig}</div>` : ""}
@@ -42,43 +43,57 @@ export class BaseFigure extends HTMLElement {
         </div>
         ${note ? `<div class="text-[10.5px] caption font-serif" data-note>${note}</div>` : ""}
       </div>`;
-  }
+   }
 
-  /* override in subclasses */
-  bodyHTML() { return ""; }
+   /* override in subclasses */
+   bodyHTML() {
+      return "";
+   }
 
-  /* convenience: scoped query inside this element */
-  $(sel) { return this.querySelector(sel); }
+   /* convenience: scoped query inside this element */
+   $(sel) {
+      return this.querySelector(sel);
+   }
 
-  /* update the right-aligned header note text, if present */
-  setNote(text) { const n = this.$("[data-note]"); if (n) n.textContent = text; }
+   /* update the right-aligned header note text, if present */
+   setNote(text) {
+      const n = this.$("[data-note]");
+      if (n) n.textContent = text;
+   }
 }
 
 /* Mixin-style helper for chart figures: manages one <canvas> and upserts a
  * Chart.js instance in place (create on first paint, mutate after). */
 export class ChartFigure extends BaseFigure {
-  constructor() { super(); this._chart = null; }
+   constructor() {
+      super();
+      this._chart = null;
+   }
 
-  /* height in px for the canvas; subclasses may override via `height` attr */
-  canvasHeight() { return Number(this.getAttribute("height")) || 220; }
+   /* height in px for the canvas; subclasses may override via `height` attr */
+   canvasHeight() {
+      return Number(this.getAttribute("height")) || 220;
+   }
 
-  bodyHTML() {
-    return `<div class="relative w-full min-w-0">
+   bodyHTML() {
+      return `<div class="relative w-full min-w-0">
       <canvas data-canvas class="!w-full" style="height:${this.canvasHeight()}px"></canvas>
     </div>`;
-  }
+   }
 
-  /* create-or-update the chart with a full Chart.js config */
-  upsert(config) {
-    if (this._chart) {
-      this._chart.data = config.data;
-      this._chart.options = config.options;
-      this._chart.update("none");
-    } else {
-      this._chart = new window.Chart(this.$("[data-canvas]"), config);
-    }
-    return this._chart;
-  }
+   /* create-or-update the chart with a full Chart.js config */
+   upsert(config) {
+      if (this._chart) {
+         this._chart.data = config.data;
+         this._chart.options = config.options;
+         this._chart.update("none");
+      } else {
+         this._chart = new window.Chart(this.$("[data-canvas]"), config);
+      }
+      return this._chart;
+   }
 
-  get chart() { return this._chart; }
+   get chart() {
+      return this._chart;
+   }
 }
