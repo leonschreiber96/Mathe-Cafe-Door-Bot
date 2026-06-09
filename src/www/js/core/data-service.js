@@ -13,8 +13,6 @@
 import { CONFIG } from "../config.js";
 import { dayStartMs, isoDay, zonedWeekday, zonedHourFloat } from "./format.js";
 
-const M = () => window.DOOR_MOCK; // bundled mock payload (mock-data.js)
-
 /* ── low-level fetch ────────────────────────────────────────────────────── */
 async function api(path) {
    const r = await fetch(CONFIG.API_BASE + path, { headers: { Accept: "application/json" } });
