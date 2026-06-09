@@ -22,6 +22,7 @@ class TelegramBot {
    }
 
    public start() {
+      return;
       this._bot.launch();
       this._doorService.onStatusChange(this.notifySubscribers.bind(this));
       // Enable graceful stop
@@ -30,6 +31,7 @@ class TelegramBot {
    }
 
    private notifySubscribers(status: DoorStatus) {
+      return;
       const emoji = { OPEN: "🟢", UNKNOWN: "🟡", CLOSED: "🔴", OFFLINE: "🫥" };
       const text = `${emoji[status]} Cafe door is now: ${status}`;
 
