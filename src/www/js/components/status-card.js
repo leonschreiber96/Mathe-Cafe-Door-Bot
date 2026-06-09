@@ -63,14 +63,21 @@ export class StatusCard extends HTMLElement {
       this.updateStatus(lastEvent);
 
       const todayStr = new Date().toLocaleDateString("sv");
-      const firstOpenToday = fullData.openEvents30Days
-         .filter((x) => x.timestamp.toLocaleDateString("sv") === todayStr)
-         .find((x) => x.status === "OPEN");
+      const eventsToday = fullData.openEvents30Days.filter((x) => x.timestamp.toLocaleDateString("sv") === todayStr);
+      const firstOpenToday = eventsToday.find((x) => x.status === "OPEN");
+      const hasAnyEventToday = eventsToday.length > 0;
+      const isCurrentlyOpen = lastEvent.status === "OPEN";
 
-      this.querySelector("[data-first]").textContent = firstOpenToday
-         ? firstOpenToday.timestamp.toLocaleTimeString("de-DE", { hour: "2-digit", minute: "2-digit" })
-         : "not yet";
+      let firstText;
+      if (firstOpenToday) {
+         firstText = firstOpenToday.timestamp.toLocaleTimeString("de-DE", { hour: "2-digit", minute: "2-digit" });
+      } else if (!hasAnyEventToday && isCurrentlyOpen) {
+         firstText = "still open";
+      } else {
+         firstText = "not yet";
+      }
 
+      this.querySelector("[data-first]").textContent = firstText;
       this.querySelector("[data-streak]").textContent = `🔥 ${fullData.openingStreak} days`;
    }
 }

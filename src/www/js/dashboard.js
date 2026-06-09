@@ -1,19 +1,15 @@
-/* dashboard.js — the orchestrator (entry point).
+/* dashboard.js — orchestrator / entry point.
  *
  * 1. Registers every custom element.
  * 2. Pins the timezone + Chart.js defaults.
- * 3. On boot: loads the current period + all aggregates once, fans the data
- *    out to the matching component via its imperative update().
- * 4. Polls the cheap live bits (status / hero / timeline / KPIs) every
- *    CONFIG.POLL_MS without touching the heavier historical charts.
+ * 3. Fetches the full dashboard payload from CONFIG.API_BASE on boot and on
+ *    every CONFIG.POLL_MS interval, then fans it out via the door:data event.
  *
- * Components are dumb renderers; this file is the only place that knows the
- * data flow and the refresh cadence.
+ * Components are dumb renderers; this file owns the data flow and refresh cadence.
  */
 import { CONFIG } from "./config.js";
-import { pinTimezone, fmtTime } from "./core/format.js";
+import { pinTimezone } from "./core/format.js";
 import { applyChartDefaults } from "./core/chart-theme.js";
-import { get, now } from "./core/data-service.js";
 
 import { StatusCard } from "./components/status-card.js";
 import { TimelineStrip } from "./components/timeline-strip.js";
@@ -41,74 +37,47 @@ for (const [tag, cls] of Object.entries(ELEMENTS)) {
    if (!customElements.get(tag)) customElements.define(tag, cls);
 }
 
-const $ = (sel) => document.querySelector(sel);
-const el = (tag) => $(tag); // a component is reachable by its tag name (one each)
+/* ── fetch + dispatch ───────────────────────────────────────────────────── */
+async function fetchAndDispatch() {
+   const r = await fetch(CONFIG.API_BASE);
+   if (!r.ok) throw new Error(`Dashboard fetch failed: ${r.status}`);
+   const data = await r.json();
 
-/* boot cache: baseline + daily are needed by the per-poll KPI refresh */
-const boot = {};
-let periods = null;
+   data.openEvents30Days = data.openEvents30Days
+      .map((x) => ({ timestamp: new Date(x.timestamp), status: x.status }))
+      .sort((a, b) => b.timestamp - a.timestamp);
 
-/* ── live tick: cheap, frequent ─────────────────────────────────────────── */
-async function tick() {
-   try {
-      const [st, ev] = await Promise.all([get.status(), get.events()]);
-      el("door-status").update(st);
-      el("door-hero").update(ev.events);
-      el("door-timeline").update(ev.events);
-      $("#liveLabel").textContent = "live · " + fmtTime(now());
-   } catch (e) {
-      console.error(e);
-      $("#liveLabel").textContent = "offline";
-   }
+   window.fullData = data;
+   window.dispatchEvent(new CustomEvent("door:data", { detail: data }));
+
+   const weekdays = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
+   const months = [
+      "January",
+      "February",
+      "March",
+      "April",
+      "May",
+      "June",
+      "July",
+      "August",
+      "September",
+      "October",
+      "November",
+      "December",
+   ];
+   const today = new Date();
+   document.getElementById("date-heading").innerHTML =
+      `${weekdays[today.getDay()]}, ${today.getDate()}. ${months[today.getMonth()]} ${today.getFullYear()}`;
+   document.getElementById("semester-heading").innerHTML = data.currentPeriod.label;
 }
 
-/* ── boot: load everything once, render all figures ─────────────────────── */
+/* ── boot ───────────────────────────────────────────────────────────────── */
 async function init() {
    pinTimezone();
    applyChartDefaults();
 
-   try {
-      const sem = await get.semesters();
-      periods = sem.periods;
-      const pid = sem.current_period_id;
-      const cp = periods.find((p) => p.id === pid);
-      const periodLabel = cp ? cp.label : pid;
-      $("#periodPill").innerHTML =
-         `<span class="text-inkfaint">period</span> <b class="text-open font-semibold">${periodLabel}</b>`;
-      el("door-heatmap").setNote(periodLabel);
-
-      const [ev, daily, byWd, byHr, heat, baseline] = await Promise.all([
-         get.events(),
-         get.daily(),
-         get.byWeekday(pid),
-         get.byHour(pid),
-         get.heatmap(pid),
-         get.baseline(pid),
-      ]);
-      boot.daily = daily;
-      boot.baseline = baseline;
-
-      const st = await get.status();
-      el("door-status").update(st);
-      el("door-hero").update(ev.events);
-      el("door-timeline").update(ev.events);
-      el("door-hours").update({ daily, periods });
-      el("door-band").update(daily);
-      el("door-weekday").update(byWd);
-      el("door-hour").update(byHr);
-      el("door-heatmap").update(heat);
-      el("door-hour-weekday").update(heat);
-      el("door-log").update(ev.events);
-
-      const stamp = window.DOOR_MOCK?.generated_at || now();
-      $("#genStamp").textContent = "data generated " + new Date(stamp).toLocaleString();
-      $("#liveLabel").textContent = "live · " + fmtTime(now());
-   } catch (e) {
-      console.error("init failed", e);
-      $("#liveLabel").textContent = "load error";
-   }
-
-   setInterval(tick, CONFIG.POLL_MS);
+   fetchAndDispatch().catch(console.error);
+   setInterval(() => fetchAndDispatch().catch(console.error), CONFIG.POLL_MS);
 }
 
 if (document.readyState === "loading") {

@@ -1,6 +1,6 @@
 /* components/timeline-strip.js — <door-timeline> (Fig. 2) */
 import { BaseFigure } from "./base-figure.js";
-import { nowFracOfDay, now } from "../core/data-service.js";
+import { nowFracOfDay } from "../core/data-service.js";
 
 export class TimelineStrip extends BaseFigure {
    bodyHTML() {
@@ -88,7 +88,7 @@ export class TimelineStrip extends BaseFigure {
       }
       const nl = document.createElement("div");
       nl.className = "tl-now";
-      nl.style.left = nowFracOfDay(ref) * 100 + "%";
+      nl.style.left = nowFracOfDay(refTime) * 100 + "%";
       track.appendChild(nl);
    }
 }

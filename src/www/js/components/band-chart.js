@@ -2,12 +2,49 @@ import { ChartFigure } from "./base-figure.js";
 import { COL, gridScale, baseOpts } from "../core/chart-theme.js";
 import { stipple } from "../core/printed-patterns.js";
 import { minToHHMM } from "../core/format.js";
-import { dailyStats } from "../core/data-service.js";
 
-const toHours = (iso) => {
-   if (!iso) return null;
-   const d = new Date(iso);
-   return d.getHours() + d.getMinutes() / 60;
+function dailyStats(events) {
+   const sorted = [...events]
+      .map((e) => ({ ...e, timestamp: new Date(e.timestamp) }))
+      .sort((a, b) => a.timestamp - b.timestamp);
+
+   const dates = [...new Set(sorted.map((e) => e.timestamp.toLocaleDateString("sv")))];
+
+   return dates.map((date) => {
+      const dayStart = new Date(date + "T00:00:00");
+      const dayEnd = new Date(date + "T24:00:00");
+      const isToday = date === new Date().toLocaleDateString("sv");
+
+      const carryIn = sorted.filter((e) => e.timestamp < dayStart).at(-1);
+      const dayEvts = sorted.filter((e) => e.timestamp >= dayStart && e.timestamp < dayEnd);
+
+      const anchors = [];
+      if (carryIn) anchors.push({ timestamp: dayStart, status: carryIn.status });
+      anchors.push(...dayEvts);
+
+      let openMs = 0,
+         first_open = null,
+         last_close = null;
+
+      for (let i = 0; i < anchors.length; i++) {
+         const start = anchors[i].timestamp;
+         const end = anchors[i + 1]?.timestamp ?? (isToday ? new Date() : dayEnd);
+         if (anchors[i].status === "OPEN") {
+            openMs += end - start;
+            if (!first_open) first_open = start;
+            last_close = end;
+         }
+      }
+
+      return { date, open_hours: openMs / 3_600_000, first_open, last_close };
+   });
+}
+
+// store Dates directly — no ISO round-trip needed
+const toHours = (d) => {
+   if (!d) return null;
+   const h = d.getHours() + d.getMinutes() / 60;
+   return h === 0 ? 24 : h; // midnight clamp for spill-over days
 };
 
 export class BandChart extends ChartFigure {
@@ -23,11 +60,10 @@ export class BandChart extends ChartFigure {
    }
 
    update(events) {
-      this._render({ days: dailyStats(events) });
+      this._render(dailyStats(events));
    }
 
-   _render(daily) {
-      const ds = daily.days;
+   _render(ds) {
       const first = ds.map((d) => toHours(d.first_open));
       const last = ds.map((d) => toHours(d.last_close));
 
@@ -37,9 +73,9 @@ export class BandChart extends ChartFigure {
             labels: ds.map((d) => d.date.slice(5)),
             datasets: [
                {
-                  label: "last close",
-                  data: last,
-                  borderColor: COL.closed,
+                  label: "first open",
+                  data: first,
+                  borderColor: COL.open,
                   borderWidth: 1.4,
                   pointRadius: 0,
                   tension: 0.25,
@@ -48,9 +84,9 @@ export class BandChart extends ChartFigure {
                   spanGaps: true,
                },
                {
-                  label: "first open",
-                  data: first,
-                  borderColor: COL.open,
+                  label: "last close",
+                  data: last,
+                  borderColor: COL.closed,
                   borderWidth: 1.4,
                   pointRadius: 0,
                   tension: 0.25,
@@ -83,3 +119,5 @@ export class BandChart extends ChartFigure {
       this.upsert(cfg);
    }
 }
+
+customElements.define("door-band", BandChart);

@@ -1,6 +1,5 @@
 import { BaseFigure } from "./base-figure.js";
 import { fmtDateTime, fmtDur } from "../core/format.js";
-import { intervals, now } from "../core/data-service.js";
 
 function badgeCls(s) {
    const l = s.toLowerCase();
@@ -27,9 +26,19 @@ export class EventLog extends BaseFigure {
       return `<div data-list class="text-[12px] max-h-[260px] overflow-auto scroll-thin"></div>`;
    }
 
+   intervals(events, until) {
+      const out = [];
+      for (let i = 0; i < events.length; i++) {
+         const start = events[i].timestamp;
+         const end = i + 1 < events.length ? events[i + 1].timestamp : until;
+         out.push({ start, end, status: events[i].status });
+      }
+      return out;
+   }
+
    update(openEvents30Days) {
       const chronological = [...openEvents30Days].sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp));
-      const ints = intervals(chronological, now()).slice().reverse();
+      const ints = this.intervals(chronological, new Date()).slice().reverse();
       this.$("[data-list]").innerHTML = ints
          .slice(0, 60)
          .map((it) => {

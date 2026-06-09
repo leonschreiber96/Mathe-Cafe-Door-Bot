@@ -125,7 +125,7 @@ app.get("/dev", (_: Request, res) => {
 
       currentPeriod: {
          type: "semester",
-         label: "SS 2026",
+         label: "Summer Semester 2026",
       },
 
       // Last 30 days of door events — most recent first, as of June 9, 2026

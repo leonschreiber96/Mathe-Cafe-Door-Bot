@@ -39,7 +39,7 @@ export class BaseFigure extends HTMLElement {
       <div class="flex items-baseline justify-between gap-2 px-[14px] py-2.5 border-b border-linesoft">
         <div>
           ${fig ? `<div class="label !text-[10px]">Fig. ${fig}</div>` : ""}
-          <h2 class="font-serif font-medium text-[14px] m-0">${heading}</h2>
+          <h2 class="font-serif text-[14px] m-0 font-bold">${heading}</h2>
         </div>
         ${note ? `<div class="text-[10.5px] caption font-serif" data-note>${note}</div>` : ""}
       </div>`;

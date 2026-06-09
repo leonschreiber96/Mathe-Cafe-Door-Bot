@@ -6,6 +6,10 @@
  * palette value.
  */
 
+body {
+   font-family: "Computer Modern", sans-serif;
+}
+
 html,
 body {
    height: 100%;
