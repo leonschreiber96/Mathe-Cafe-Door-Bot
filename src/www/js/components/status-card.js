@@ -64,7 +64,7 @@ export class StatusCard extends HTMLElement {
 
       const todayStr = new Date().toLocaleDateString("sv");
       const eventsToday = fullData.openEvents30Days.filter((x) => x.timestamp.toLocaleDateString("sv") === todayStr);
-      const firstOpenToday = eventsToday.find((x) => x.status === "OPEN");
+      const firstOpenToday = eventsToday.findLast((x) => x.status === "OPEN");
       const hasAnyEventToday = eventsToday.length > 0;
       const isCurrentlyOpen = lastEvent.status === "OPEN";
 
