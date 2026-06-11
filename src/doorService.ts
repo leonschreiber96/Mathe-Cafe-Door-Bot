@@ -60,6 +60,7 @@ class DoorService {
 
       if (last) {
          this._lastStatus = last.status;
+         this._lastApiTimestamp = last.status === "OFFLINE" ? null : last.eventTime;
          this._logger.info(`Restored last known status "${last.status}" from DB`);
       }
 
@@ -112,6 +113,7 @@ class DoorService {
       }
 
       const raw: { status: string; timestamp: string } = await response.json();
+      this._logger.debug(`Received status ${raw.status}`);
       return {
          status: raw.status.toUpperCase() as DoorStatus,
          timestamp: new Date(raw.timestamp),
@@ -144,16 +146,23 @@ class DoorService {
          const statusChanged = status !== this._lastStatus;
          const timestampChanged =
             this._lastApiTimestamp !== null && apiTimestamp.getTime() !== this._lastApiTimestamp.getTime();
+         const isRecoveryPoll = this._lastApiTimestamp === null;
 
-         if (statusChanged) {
-            // Real transition — normal flips, and recovery from UNKNOWN/OFFLINE
+         if (statusChanged || isRecoveryPoll) {
             this._db.saveDoorStatus(status, apiTimestamp);
-            this._statusChangeSubscribers.forEach((sub) => {
-               sub.handler(status);
-            });
-            this._logger.info(`Door status → ${status} at ${apiTimestamp.toISOString()}`);
+
+            if (statusChanged) {
+               this._statusChangeSubscribers.forEach((sub) => {
+                  sub.handler(status);
+               });
+            }
+
+            this._logger.info(
+               isRecoveryPoll && !statusChanged
+                  ? `Door status recovered → ${status} at ${apiTimestamp.toISOString()}`
+                  : `Door status → ${status} at ${apiTimestamp.toISOString()}`,
+            );
          } else if (timestampChanged) {
-            // Same status but API assigned a new timestamp (e.g. server restart) — ignore
             this._logger.debug(
                `API timestamp reset for ${status}: ` +
                   `${this._lastApiTimestamp!.toISOString()} → ${apiTimestamp.toISOString()}, no real change`,

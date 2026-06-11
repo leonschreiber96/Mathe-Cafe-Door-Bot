@@ -127,6 +127,9 @@ body {
 .tl-seg.unkown {
    background-image: repeating-linear-gradient(45deg, var(--unknown) 0 3px, transparent 3px 7px);
 }
+.tl-seg.future {
+   background-color: var(--paper);
+}
 .tl-now {
    /* the "now" marker line */
    position: absolute;

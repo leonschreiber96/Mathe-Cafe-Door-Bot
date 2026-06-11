@@ -115,6 +115,19 @@ function buildDashboardData() {
    const now = new Date();
    const currentPeriod = findPeriodForDate(now);
 
+   const currentStatusRow = db
+      .prepare(
+         `
+    SELECT
+      UPPER(status) AS status,
+      event_time AS timestamp
+    FROM door_status
+    ORDER BY inserted_at DESC
+    LIMIT 1
+  `,
+      )
+      .get() as { status: string; timestamp: string } | undefined;
+
    // ── openEvents30Days ──────────────────────────────────────────────────
    const eventRows = db
       .prepare(
@@ -210,6 +223,7 @@ function buildDashboardData() {
    const openByWeekdayXHour = openMs7x24.map((row, wd) => row.map((ms, hr) => pct(ms, knownMs7x24[wd][hr])));
 
    return {
+      currentStatus: currentStatusRow ?? null,
       openingStreak,
       currentPeriod: currentPeriod
          ? { type: currentPeriod.type, label: currentPeriod.label }
@@ -262,12 +276,18 @@ const database = {
       );
    },
 
-   getLastDoorStatus: (): { status: DoorStatus; insertedAt: Date } | null => {
-      const row = db.prepare("SELECT status, inserted_at FROM door_status ORDER BY inserted_at DESC LIMIT 1").get() as
-         | { status: string; inserted_at: string }
-         | undefined;
+   getLastDoorStatus: (): { status: DoorStatus; insertedAt: Date; eventTime: Date } | null => {
+      const row = db
+         .prepare("SELECT status, inserted_at, event_time FROM door_status ORDER BY inserted_at DESC LIMIT 1")
+         .get() as { status: string; inserted_at: string; event_time: string } | undefined;
+
       if (!row) return null;
-      return { status: row.status as DoorStatus, insertedAt: new Date(row.inserted_at) };
+
+      return {
+         status: row.status as DoorStatus,
+         insertedAt: new Date(row.inserted_at),
+         eventTime: new Date(row.event_time),
+      };
    },
 
    getDashboardData: buildDashboardData,

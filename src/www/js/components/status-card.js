@@ -59,7 +59,8 @@ export class StatusCard extends HTMLElement {
    }
 
    update(fullData) {
-      const lastEvent = fullData.openEvents30Days[0];
+      const lastEvent = fullData.currentStatus;
+      if (!lastEvent) return;
       this.updateStatus(lastEvent);
 
       const todayStr = new Date().toLocaleDateString("sv");

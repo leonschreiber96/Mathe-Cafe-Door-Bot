@@ -48,6 +48,8 @@ async function fetchAndDispatch() {
       .map((x) => ({ timestamp: new Date(x.timestamp), status: x.status }))
       .sort((a, b) => b.timestamp - a.timestamp);
 
+   data.currentStatus.timestamp = new Date(data.currentStatus.timestamp);
+
    window.fullData = data;
    window.dispatchEvent(new CustomEvent("door:data", { detail: data }));
 

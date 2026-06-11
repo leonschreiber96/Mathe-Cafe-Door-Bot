@@ -64,11 +64,21 @@ export class TimelineStrip extends BaseFigure {
       const isToday = dayStart.toDateString() === ref.toDateString();
       const effectiveEnd = isToday ? ref : dayEnd;
 
-      return anchors.map((anchor, i) => ({
+      const openSegments = anchors.map((anchor, i) => ({
          status: anchor.status,
          startFrac: toFrac(anchor.timestamp),
          endFrac: toFrac(anchors[i + 1]?.timestamp ?? effectiveEnd),
       }));
+
+      openSegments.push({
+         status: "future",
+         startFrac: toFrac(new Date()),
+         endFrac: 1.0,
+      });
+
+      console.log(openSegments);
+
+      return openSegments;
    }
 
    nowFracOfDay(ref) {
