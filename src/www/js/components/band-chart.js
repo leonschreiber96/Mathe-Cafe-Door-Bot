@@ -3,11 +3,11 @@ import { COL, gridScale, baseOpts } from "../core/chart-theme.js";
 import { stipple } from "../core/printed-patterns.js";
 import { minToHHMM } from "../core/format.js";
 
+/**
+ * @param {{status: string, timestamp: Date}[]} events
+ */
 function dailyStats(events) {
-   const sorted = [...events]
-      .map((e) => ({ ...e, timestamp: new Date(e.timestamp) }))
-      .sort((a, b) => a.timestamp - b.timestamp);
-
+   const sorted = [...events].sort((a, b) => a.timestamp - b.timestamp);
    const dates = [...new Set(sorted.map((e) => e.timestamp.toLocaleDateString("sv")))];
 
    return dates.map((date) => {
