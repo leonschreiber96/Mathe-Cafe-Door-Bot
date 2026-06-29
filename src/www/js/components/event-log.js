@@ -41,9 +41,12 @@ export class EventLog extends BaseFigure {
       const ints = this.intervals(chronological, new Date()).slice().reverse();
       this.$("[data-list]").innerHTML = ints
          .slice(0, 60)
-         .map((it) => {
+         .map((it, idx) => {
+            // The newest entry's interval runs to "now" (a synthetic end), which is
+            // meaningless when viewing the past — and redundant with the live status
+            // up top. Skip its duration; the rest are real start→next-event spans.
             const dur = it.end != null ? (it.end - it.start) / 1000 : null;
-            const durTxt = dur != null && dur > 0 ? fmtDur(dur) : "";
+            const durTxt = idx === 0 ? "" : dur != null && dur > 0 ? fmtDur(dur) : "";
             return `<div class="grid grid-cols-[auto_70px_1fr] gap-2.5 py-[5px] px-0.5 border-b border-linesoft items-center last:border-0">
          <span class="text-inkfaint text-[11px]">${fmtDateTime(it.start)}</span>
          <span class="font-mono text-[10px] px-1.5 py-px border text-center tracking-[.3px] ${badgeCls(it.status)}">${it.status}</span>

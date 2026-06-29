@@ -2,38 +2,6 @@ import { ChartFigure } from "./base-figure.js";
 import { COL, PERIOD_COL, gridScale, baseOpts } from "../core/chart-theme.js";
 import { hatch } from "../core/printed-patterns.js";
 
-function dailyOpenHours(events) {
-   const sorted = [...events]
-      .map((e) => ({ ...e, timestamp: new Date(e.timestamp) }))
-      .sort((a, b) => a.timestamp - b.timestamp);
-
-   const dates = [...new Set(sorted.map((e) => e.timestamp.toISOString().slice(0, 10)))];
-
-   return dates.map((date) => {
-      const dayStart = new Date(date + "T00:00:00");
-      const dayEnd = new Date(date + "T24:00:00");
-      const isToday = date === new Date().toISOString().slice(0, 10);
-      const effectiveEnd = isToday ? new Date() : dayEnd;
-
-      const carryIn = sorted.filter((e) => e.timestamp < dayStart).at(-1);
-      const dayEvts = sorted.filter((e) => e.timestamp >= dayStart && e.timestamp < dayEnd);
-
-      const anchors = [];
-      if (carryIn) anchors.push({ timestamp: dayStart, status: carryIn.status });
-      anchors.push(...dayEvts);
-
-      let openMs = 0;
-      for (let i = 0; i < anchors.length; i++) {
-         if (anchors[i].status !== "OPEN") continue;
-         const start = anchors[i].timestamp;
-         const end = anchors[i + 1]?.timestamp ?? effectiveEnd;
-         openMs += end - start;
-      }
-
-      return { date, open_hours: openMs / 3_600_000 };
-   });
-}
-
 export class HoursChart extends ChartFigure {
    connectedCallback() {
       super.connectedCallback?.();
@@ -46,20 +14,25 @@ export class HoursChart extends ChartFigure {
       window.removeEventListener("door:data", this._onData);
    }
 
-   update({ openEvents30Days, currentPeriod }) {
-      this._render(dailyOpenHours(openEvents30Days), currentPeriod);
+   // openByDate covers every day of the current period (excluded days = null gap)
+   update({ openByDate, currentPeriod }) {
+      this._render(openByDate || [], currentPeriod);
    }
 
    _render(ds, currentPeriod) {
       const col = PERIOD_COL[currentPeriod?.type] || COL.open;
 
+      // "YYYY-MM-DD" → German "DD.MM." (axis) / "DD.MM.YYYY" (tooltip)
+      const deShort = (iso) => `${iso.slice(8, 10)}.${iso.slice(5, 7)}.`;
+      const deFull = (iso) => `${iso.slice(8, 10)}.${iso.slice(5, 7)}.${iso.slice(0, 4)}`;
+
       const cfg = {
          type: "bar",
          data: {
-            labels: ds.map((d) => d.date.slice(5)),
+            labels: ds.map((d) => deShort(d.date)),
             datasets: [
                {
-                  data: ds.map((d) => d.open_hours),
+                  data: ds.map((d) => d.hours),
                   backgroundColor: ds.map(() => hatch(col, 1, 4, 0.9)),
                   borderColor: ds.map(() => col),
                   borderWidth: 0.8,
@@ -78,7 +51,7 @@ export class HoursChart extends ChartFigure {
                legend: { display: false },
                tooltip: {
                   callbacks: {
-                     title: (i) => ds[i[0].dataIndex].date,
+                     title: (i) => deFull(ds[i[0].dataIndex].date),
                      label: (i) => `${i.parsed.y.toFixed(1)} h open · ${currentPeriod?.label ?? ""}`,
                   },
                },

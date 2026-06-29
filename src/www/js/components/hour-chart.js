@@ -36,6 +36,7 @@ export class HourChart extends ChartFigure {
             ],
          },
          options: baseOpts({
+            interaction: { mode: "index", intersect: false },
             scales: {
                x: gridScale({ grid: { display: false }, ticks: { color: COL.inkdim, maxTicksLimit: 12 } }),
                y: gridScale({

@@ -93,10 +93,29 @@
                   </div>
                </div>
                <div>
-                  <p id="date-heading" class="font-serif font-bold text-center sm:text-right">
-                     Wednesday, 27. September 2026
-                  </p>
+                  <div class="flex items-center justify-center sm:justify-end gap-2">
+                     <button
+                        id="prev-day"
+                        title="Previous day"
+                        class="px-1.5 leading-none text-[16px] text-inkdim hover:text-ink"
+                     >
+                        ◀
+                     </button>
+                     <p id="date-heading" class="font-serif font-bold text-center min-w-[12em]">
+                        Wednesday, 27. September 2026
+                     </p>
+                     <button
+                        id="next-day"
+                        title="Next day"
+                        class="px-1.5 leading-none text-[16px] text-inkdim hover:text-ink"
+                     >
+                        ▶
+                     </button>
+                  </div>
                   <p id="semester-heading" class="label mt-1 text-center sm:text-right">Summer Semester 2026</p>
+                  <p class="text-center sm:text-right mt-0.5">
+                     <a id="today-link" href="./" class="text-[10px] text-inkdim underline hidden">jump to today</a>
+                  </p>
                </div>
             </div>
          </header>
@@ -107,11 +126,16 @@
             <door-timeline fig="1" heading="Timeline of Today's Opening Hours" note="green = open"></door-timeline>
          </section>
 
-         <!-- ── 30-day history ── -->
-         <section class="grid gap-[14px] lg:grid-cols-2 mb-[14px]">
-            <door-hours fig="2" heading="Hours Open per Day (Last 30 d)"></door-hours>
-            <door-band fig="3" heading="First Open → Last Close (Last 30 days)"></door-band>
-         </section>
+         <!-- ── 30-day history (full width) ── -->
+         <door-hours class="mb-[14px]" fig="2" heading="Hours Open per Day (Current Period)"></door-hours>
+
+         <!-- ── Calendar of daily open hours (full width) ── -->
+         <door-calendar
+            class="mb-[14px]"
+            fig="3"
+            heading="Open Hours Calendar (Current Period)"
+            note="darker = more hours open"
+         ></door-calendar>
 
          <!-- ── Heatmap (full width) ── -->
          <door-heatmap
@@ -134,8 +158,22 @@
             note="click a weekday to toggle · hover to compare"
          ></door-hour-weekday>
 
+         <!-- ── Shift coverage (full width) ── -->
+         <door-shift-adherence
+            class="mb-[14px]"
+            fig="8"
+            heading="Shift Coverage (Current Period)"
+            note="% of scheduled shift the door was open"
+         ></door-shift-adherence>
+
+         <!-- ── Distributions: first-open time + session length ── -->
+         <section class="grid gap-[14px] lg:grid-cols-2 mb-[14px]">
+            <door-first-open fig="9" heading="First Opening Time (Current Period)" note="days per hour"></door-first-open>
+            <door-session fig="10" heading="Session Length (Current Period)" note="open sessions"></door-session>
+         </section>
+
          <!-- ── Event log ── -->
-         <door-log fig="8" heading="Event log" note="most recent first"></door-log>
+         <door-log fig="11" heading="Event log" note="most recent first"></door-log>
 
          <footer
             class="mt-6 border-t border-line pt-3 text-[10.5px] text-inkfaint flex flex-wrap justify-between gap-2 font-serif italic"

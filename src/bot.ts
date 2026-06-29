@@ -2,26 +2,15 @@ import { Context, Telegraf } from "telegraf";
 import { type Logger } from "./logger.js";
 import { Database } from "./database.js";
 import DoorService, { DoorStatus } from "./doorService.js";
+import { fetchAndStoreShiftPlan, getStoredPlan, type Slot, type Weekday } from "./shiftPlanService.js";
 
-import * as cheerio from "cheerio";
-
-type Slot = "08-10" | "10-12" | "12-14" | "14-16" | "16-18" | "18-20";
-type Weekday = "monday" | "tuesday" | "wednesday" | "thursday" | "friday";
-
-type TimeSlots = {
-   [K in Slot]: string | null;
-};
-
-type ShiftPlan = {
-   [K in Weekday]: TimeSlots;
-};
+const ADMIN_CHAT_ID = process.env.ADMIN_CHAT_ID;
 
 class TelegramBot {
    private _logger: Logger;
    private _db: Database;
    private _bot: Telegraf;
    private _doorService: DoorService;
-   private _shiftPlan?: ShiftPlan;
 
    constructor(botToken: string, logger: Logger, database: Database, doorService: DoorService) {
       this._logger = logger;
@@ -64,80 +53,18 @@ Use /schichtplan to see today's shifts.`,
       );
    }
 
-   private async getShiftPlan(): Promise<ShiftPlan> {
-      const res = await fetch("https://wiki.mathe-cafe.de/en/schichtplan");
-      if (!res.ok) {
-         throw new Error(`Failed to fetch shift plan: ${res.status} ${res.statusText}`);
+   /* Send a message to the configured admin chat (crawler health, change
+      notices). No-op with a warning when ADMIN_CHAT_ID is unset. */
+   public async notifyAdmin(text: string): Promise<void> {
+      if (!ADMIN_CHAT_ID) {
+         this._logger.warn(`notifyAdmin called but ADMIN_CHAT_ID is not set. Message: ${text}`);
+         return;
       }
-
-      const html = await res.text();
-      const $ = cheerio.load(html);
-
-      const emptyDay = (): TimeSlots => ({
-         "08-10": null,
-         "10-12": null,
-         "12-14": null,
-         "14-16": null,
-         "16-18": null,
-         "18-20": null,
-      });
-
-      const plan: ShiftPlan = {
-         monday: emptyDay(),
-         tuesday: emptyDay(),
-         wednesday: emptyDay(),
-         thursday: emptyDay(),
-         friday: emptyDay(),
-      };
-
-      const dayMap: Record<string, Weekday> = {
-         Montag: "monday",
-         Dienstag: "tuesday",
-         Mittwoch: "wednesday",
-         Donnerstag: "thursday",
-         Freitag: "friday",
-      };
-
-      const slotMap: Record<string, Slot> = {
-         "8h": "08-10",
-         "10h": "10-12",
-         "12h": "12-14",
-         "14h": "14-16",
-         "16h": "16-18",
-         "18h": "18-20",
-      };
-
-      const table = $(".table-container table").first();
-      if (!table.length) {
-         throw new Error("Shift plan table not found");
+      try {
+         await this._bot.telegram.sendMessage(ADMIN_CHAT_ID, text);
+      } catch (err) {
+         this._logger.error(`Failed to notify admin: ${err instanceof Error ? err.message : String(err)}`);
       }
-
-      const headers = table
-         .find("thead th")
-         .toArray()
-         .map((th) => $(th).text().trim());
-
-      table.find("tbody tr").each((_, tr) => {
-         const cells = $(tr)
-            .find("td")
-            .toArray()
-            .map((td) => $(td).text().replace(/\s+/g, " ").trim());
-
-         const timeLabel = cells[0];
-         const slot = slotMap[timeLabel];
-         if (!slot) return;
-
-         for (let col = 1; col < cells.length; col++) {
-            const header = headers[col];
-            const day = dayMap[header];
-            if (!day) continue;
-
-            const rawValue = cells[col];
-            plan[day][slot] = rawValue.length > 0 ? rawValue : null;
-         }
-      });
-
-      return plan;
    }
 
    private getBerlinWeekday(): Weekday | null {
@@ -165,8 +92,10 @@ Use /schichtplan to see today's shifts.`,
 
    private async cmdGetShiftPlan(ctx: Context) {
       try {
-         if (!this._shiftPlan) {
-            this._shiftPlan = await this.getShiftPlan();
+         // Read the persisted plan; fall back to a live fetch if we've never crawled.
+         let plan = getStoredPlan();
+         if (!plan) {
+            plan = (await fetchAndStoreShiftPlan()).plan;
          }
 
          const dayKey = this.getBerlinWeekday();
@@ -184,7 +113,7 @@ Use /schichtplan to see today's shifts.`,
             return;
          }
 
-         const dayPlan = this._shiftPlan[dayKey];
+         const dayPlan = plan[dayKey];
 
          const shifts = (Object.entries(dayPlan) as [Slot, string | null][])
             .filter(([, value]) => value !== null)

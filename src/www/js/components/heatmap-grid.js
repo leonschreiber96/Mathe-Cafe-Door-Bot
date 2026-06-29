@@ -12,7 +12,9 @@ function heatColor(pct) {
 export class HeatmapGrid extends BaseFigure {
    bodyHTML() {
       return `
-      <div data-grid class="heat"></div>
+      <div class="heat-scroll overflow-x-auto scroll-thin">
+        <div data-grid class="heat"></div>
+      </div>
       <div class="flex items-center gap-1.5 text-[9.5px] text-inkfaint mt-2.5">
         <span>0%</span><div data-scale class="flex gap-0.5"></div><span>100%</span>
         <span class="ml-2">share of hour the door was open</span>
@@ -37,11 +39,11 @@ export class HeatmapGrid extends BaseFigure {
    }
 
    update(matrix) {
-      let html = `<div></div>`;
+      let html = `<div class="heat-corner"></div>`;
       for (let hr = 0; hr < 24; hr++)
          html += `<div class="text-[8.5px] text-inkfaint text-center">${hr % 3 === 0 ? hr : ""}</div>`;
       for (let wd = 0; wd < 7; wd++) {
-         html += `<div class="text-[10px] text-inkdim pr-1 text-right">${WEEKDAYS_SHORT[wd]}</div>`;
+         html += `<div class="heat-label text-[10px] text-inkdim pr-1 text-right">${WEEKDAYS_SHORT[wd]}</div>`;
          for (let hr = 0; hr < 24; hr++) {
             const v = matrix[wd][hr];
             html += `<div class="cell" style="background:${heatColor(v)}" title="${WEEKDAYS_LONG[wd]} ${String(hr).padStart(2, "0")}:00 · ${v.toFixed(0)}% open"></div>`;

@@ -3,6 +3,7 @@ import database from "./database.js";
 import DoorService from "./doorService.js";
 import logger from "./logger.js";
 import webServer from "./webServer.js";
+import { startScheduler } from "./scheduler.js";
 
 const BOT_TOKEN = process.env.BOT_TOKEN;
 const API_URL = process.env.DOOR_API_URL;
@@ -36,3 +37,6 @@ DOOR_SERVICE.startPolling(10_000);
 
 const WEB_SERVER = webServer;
 WEB_SERVER.listen();
+
+// Periodically crawl the shift plan + semester dates and alert the admin chat.
+startScheduler({ logger: LOGGER, notifyAdmin: BOT.notifyAdmin.bind(BOT) });

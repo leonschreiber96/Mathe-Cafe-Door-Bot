@@ -25,10 +25,10 @@ export class TimelineStrip extends BaseFigure {
    connectedCallback() {
       super.connectedCallback?.();
 
-      this._onData = (e) => this.update(e.detail.openEvents30Days);
+      this._onData = (e) => this.update(e.detail);
       window.addEventListener("door:data", this._onData);
 
-      if (window.fullData) this.update(window.fullData.openEvents30Days);
+      if (window.fullData) this.update(window.fullData);
    }
 
    disconnectedCallback() {
@@ -72,11 +72,9 @@ export class TimelineStrip extends BaseFigure {
 
       openSegments.push({
          status: "future",
-         startFrac: toFrac(new Date()),
+         startFrac: toFrac(effectiveEnd),
          endFrac: 1.0,
       });
-
-      console.log(openSegments);
 
       return openSegments;
    }
@@ -85,12 +83,24 @@ export class TimelineStrip extends BaseFigure {
       return (ref.getTime() - dayStartMs(ref)) / (24 * 3600e3);
    }
 
-   update(events) {
-      const refTime = new Date();
+   update(data) {
+      const events = data.openEvents30Days;
+      const refTime = data.asOf ? new Date(data.asOf) : new Date();
+
+      // Heading reflects the viewed day: live "today" vs a past date.
+      const h2 = this.querySelector("h2");
+      if (h2) {
+         if (data.isToday === false) {
+            const pad = (n) => String(n).padStart(2, "0");
+            const de = `${pad(refTime.getDate())}.${pad(refTime.getMonth() + 1)}.${refTime.getFullYear()}`;
+            h2.textContent = `Opening Hours on ${de}`;
+         } else {
+            h2.textContent = "Timeline of Today's Opening Hours";
+         }
+      }
+
       const track = this.$("[data-track]");
       track.innerHTML = "";
-
-      console.log(this.todaySegments(events, refTime));
 
       for (const s of this.todaySegments(events, refTime)) {
          if (s.status === "closed") continue;
@@ -100,9 +110,12 @@ export class TimelineStrip extends BaseFigure {
          el.style.width = (s.endFrac - s.startFrac) * 100 + "%";
          track.appendChild(el);
       }
-      const nl = document.createElement("div");
-      nl.className = "tl-now";
-      nl.style.left = this.nowFracOfDay(refTime) * 100 + "%";
-      track.appendChild(nl);
+      // the "now" marker only applies to today, not a completed past day
+      if (data.isToday !== false) {
+         const nl = document.createElement("div");
+         nl.className = "tl-now";
+         nl.style.left = this.nowFracOfDay(refTime) * 100 + "%";
+         track.appendChild(nl);
+      }
    }
 }

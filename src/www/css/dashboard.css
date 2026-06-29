@@ -143,9 +143,12 @@ body {
 
 .heat {
    display: grid;
-   grid-template-columns: 34px repeat(24, 1fr);
+   grid-template-columns: 34px repeat(24, minmax(16px, 1fr));
    gap: 2px;
    align-items: center;
+   /* keep cells legible on phones: scroll horizontally inside the card
+      (.heat-scroll) instead of letting the grid overflow the page. */
+   min-width: 560px;
 }
 .heat .cell {
    aspect-ratio: 1;
@@ -153,6 +156,92 @@ body {
    background: var(--paper-2);
    min-height: 11px;
    box-shadow: inset 0 0 0 1px rgba(120, 108, 80, 0.18);
+}
+/* pin the weekday label column while the grid scrolls horizontally */
+.heat-corner,
+.heat-label {
+   position: sticky;
+   left: 0;
+   z-index: 1;
+   background: var(--paper);
+}
+
+/* ── calendar heatmap: weeks as rows, days shaded by hours open ──────────── */
+
+.cal {
+   display: grid;
+   grid-template-columns: 34px repeat(7, 1fr);
+   gap: 3px;
+   align-items: center;
+}
+.cal .head {
+   font-size: 9px;
+   color: var(--ink-faint);
+   text-align: center;
+}
+.cal .rowlabel {
+   font-size: 9px;
+   color: var(--ink-faint);
+   text-align: right;
+   padding-right: 4px;
+}
+.cal .cell {
+   height: 18px;
+   border-radius: 1px;
+   box-shadow: inset 0 0 0 1px rgba(120, 108, 80, 0.18);
+}
+.cal .cell.empty {
+   box-shadow: none;
+   background: transparent;
+}
+/* excluded days (e.g. Christmas) — a faint hatched gap, distinct from a 0h day */
+.cal .cell.gap {
+   background-image: repeating-linear-gradient(
+      45deg,
+      rgba(120, 108, 80, 0.25) 0 1px,
+      transparent 1px 4px
+   );
+   box-shadow: none;
+}
+
+/* ── shift coverage grid: weekday × 2h slot, % of scheduled shift open ───── */
+
+.shiftgrid {
+   display: grid;
+   grid-template-columns: 48px repeat(5, 1fr);
+   gap: 3px;
+   align-items: stretch;
+}
+.shiftgrid .head {
+   font-size: 10px;
+   color: var(--ink-faint);
+   text-align: center;
+   align-self: center;
+}
+.shiftgrid .rowlabel {
+   font-size: 9.5px;
+   color: var(--ink-dim);
+   text-align: right;
+   padding-right: 5px;
+   align-self: center;
+   font-variant-numeric: tabular-nums;
+}
+.shiftgrid .cell {
+   min-height: 32px;
+   border-radius: 2px;
+   display: flex;
+   align-items: center;
+   justify-content: center;
+   font-size: 11px;
+   box-shadow: inset 0 0 0 1px rgba(120, 108, 80, 0.18);
+}
+.shiftgrid .cell.none {
+   box-shadow: none;
+   background-image: repeating-linear-gradient(
+      45deg,
+      rgba(120, 108, 80, 0.12) 0 1px,
+      transparent 1px 5px
+   );
 }
 
 /* ── skeleton shimmer (loading states) ──────────────────────────────────── */
@@ -215,11 +304,14 @@ door-status,
 door-hero,
 door-timeline,
 door-hours,
-door-band,
+door-calendar,
 door-heatmap,
 door-weekday,
 door-hour,
 door-hour-weekday,
+door-shift-adherence,
+door-first-open,
+door-session,
 door-log {
    display: block;
    min-width: 0; /* let flex/grid children shrink instead of overflowing */
