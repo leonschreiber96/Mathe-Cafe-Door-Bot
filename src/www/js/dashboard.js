@@ -21,6 +21,7 @@ import { HourWeekdayChart } from "./components/hour-weekday-chart.js";
 import { ShiftAdherence } from "./components/shift-adherence.js";
 import { FirstOpenChart } from "./components/first-open-chart.js";
 import { SessionLengthChart } from "./components/session-length-chart.js";
+import { SessionRetentionChart } from "./components/session-retention-chart.js";
 import { EventLog } from "./components/event-log.js";
 
 import { WEEKDAYS_LONG, MONTHS_LONG } from "./core/format.js";
@@ -38,6 +39,7 @@ const ELEMENTS = {
    "door-shift-adherence": ShiftAdherence,
    "door-first-open": FirstOpenChart,
    "door-session": SessionLengthChart,
+   "door-retention": SessionRetentionChart,
    "door-log": EventLog,
 };
 for (const [tag, cls] of Object.entries(ELEMENTS)) {

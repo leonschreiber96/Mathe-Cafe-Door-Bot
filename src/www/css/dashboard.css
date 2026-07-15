@@ -312,6 +312,7 @@ door-hour-weekday,
 door-shift-adherence,
 door-first-open,
 door-session,
+door-retention,
 door-log {
    display: block;
    min-width: 0; /* let flex/grid children shrink instead of overflowing */

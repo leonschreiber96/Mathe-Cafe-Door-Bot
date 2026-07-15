@@ -169,11 +169,20 @@
          <!-- ── Distributions: first-open time + session length ── -->
          <section class="grid gap-[14px] lg:grid-cols-2 mb-[14px]">
             <door-first-open fig="9" heading="First Opening Time (Current Period)" note="days per hour"></door-first-open>
-            <door-session fig="10" heading="Session Length (Current Period)" note="open sessions"></door-session>
+            <door-session fig="10" heading="Session Length (Current Period)" note="hours open per session length"></door-session>
          </section>
 
+         <!-- ── Session retention: survival curve of session lengths ── -->
+         <door-retention
+            fig="11"
+            class="mb-[14px]"
+            heading="Session Retention (Current Period)"
+            note="share of sessions lasting at least x"
+            height="260"
+         ></door-retention>
+
          <!-- ── Event log ── -->
-         <door-log fig="11" heading="Event log" note="most recent first"></door-log>
+         <door-log fig="12" heading="Event log" note="most recent first"></door-log>
 
          <footer
             class="mt-6 border-t border-line pt-3 text-[10.5px] text-inkfaint flex flex-wrap justify-between gap-2 font-serif italic"

@@ -433,7 +433,8 @@ function buildDashboardData(asOf: Date = new Date(), shiftPlan: ShiftPlan | null
       { label: "6–8h", max: 8 },
       { label: "8h+", max: Infinity },
    ];
-   const sessionLengths = sessionBins.map((b) => ({ label: b.label, count: 0 }));
+   const sessionLengths = sessionBins.map((b) => ({ label: b.label, hours: 0, count: 0 }));
+   const sessionMinutes: number[] = [];
 
    for (const row of allRows) {
       if (row.status !== "open") continue;
@@ -450,7 +451,31 @@ function buildDashboardData(asOf: Date = new Date(), shiftPlan: ShiftPlan | null
       // session length of this open interval (capped at the reference instant)
       const end = Math.min(row.next_event_time ? new Date(row.next_event_time).getTime() : now.getTime(), now.getTime());
       const hours = (end - start.getTime()) / 3_600_000;
-      sessionLengths[sessionBins.findIndex((b) => hours < b.max)].count++;
+      const bin = sessionLengths[sessionBins.findIndex((b) => hours < b.max)];
+      bin.hours += hours;
+      bin.count++;
+      sessionMinutes.push(hours * 60);
+   }
+
+   for (const b of sessionLengths) b.hours = Math.round(b.hours * 10) / 10;
+
+   // ── session retention: f(x) = share of sessions that lasted at least x ──
+   // Exact survival curve (complementary CDF), not a binned approximation: one
+   // point per distinct duration, so the step heights are the real quantiles.
+   // Sorted ascending, the count of sessions >= durations[i] is simply n - i.
+   // A trailing (max, 0) point makes the curve reach 0% at the longest session.
+   sessionMinutes.sort((a, b) => a - b);
+   const n = sessionMinutes.length;
+   const round2 = (v: number) => Math.round(v * 100) / 100;
+   const sessionRetention: { minutes: number; pct: number }[] = [];
+   if (n > 0) {
+      if (sessionMinutes[0] > 0) sessionRetention.push({ minutes: 0, pct: 1 });
+      for (let i = 0; i < n; ) {
+         const d = sessionMinutes[i];
+         sessionRetention.push({ minutes: round2(d), pct: Math.round(((n - i) / n) * 10000) / 10000 });
+         while (i < n && sessionMinutes[i] === d) i++;
+      }
+      sessionRetention.push({ minutes: round2(sessionMinutes[n - 1]), pct: 0 });
    }
 
    const firstOpenHistogram = Array<number>(24).fill(0);
@@ -471,6 +496,7 @@ function buildDashboardData(asOf: Date = new Date(), shiftPlan: ShiftPlan | null
       shiftAdherence,
       firstOpenHistogram,
       sessionLengths,
+      sessionRetention,
    };
 }
 

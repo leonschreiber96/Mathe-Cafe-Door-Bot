@@ -2,8 +2,9 @@ import { ChartFigure } from "./base-figure.js";
 import { COL, gridScale, baseOpts } from "../core/chart-theme.js";
 import { hatch } from "../core/printed-patterns.js";
 
-/* Fig: distribution of how long each open session lasts (current period).
- * Backend supplies pre-binned { label, count } buckets. */
+/* Fig: how the period's total open time is distributed across session lengths.
+ * Backend supplies pre-binned { label, hours, count } buckets; the bar is the
+ * summed hours, so a swarm of accidental seconds-long sessions stays flat. */
 export class SessionLengthChart extends ChartFigure {
    connectedCallback() {
       super.connectedCallback?.();
@@ -24,7 +25,7 @@ export class SessionLengthChart extends ChartFigure {
             labels: data.map((b) => b.label),
             datasets: [
                {
-                  data: data.map((b) => b.count),
+                  data: data.map((b) => b.hours),
                   backgroundColor: hatch(COL.open, 1, 4, 0.9),
                   borderColor: COL.open,
                   borderWidth: 0.8,
@@ -36,14 +37,17 @@ export class SessionLengthChart extends ChartFigure {
          options: baseOpts({
             scales: {
                x: gridScale({ grid: { display: false }, ticks: { color: COL.inkdim } }),
-               y: gridScale({ beginAtZero: true, ticks: { color: COL.inkdim, precision: 0 } }),
+               y: gridScale({ beginAtZero: true, ticks: { color: COL.inkdim, callback: (v) => v + "h" } }),
             },
             plugins: {
                legend: { display: false },
                tooltip: {
                   callbacks: {
                      title: (i) => `${data[i[0].dataIndex].label} sessions`,
-                     label: (i) => `${i.parsed.y} ${i.parsed.y === 1 ? "session" : "sessions"}`,
+                     label: (i) => {
+                        const b = data[i.dataIndex];
+                        return `${b.hours.toFixed(1)} h open · ${b.count} ${b.count === 1 ? "session" : "sessions"}`;
+                     },
                   },
                },
             },
