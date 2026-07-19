@@ -41,7 +41,7 @@ See `.env.example` for the full annotated list. Required: `BOT_TOKEN`,
 
 | File | Responsibility |
 |------|----------------|
-| `doorService.ts` | Polls the door API, detects changes, writes events, notifies subscribers. Guards against backward API clock skew; writes `OFFLINE` on shutdown / unclean restart. |
+| `doorService.ts` | Polls the door API, detects changes, writes events, notifies subscribers. **Debounces** readings (`STATUS_CONFIRMATIONS`, default 3) so a flaky sensor/API can't flip state or spam notifications; a failed poll is just an `UNKNOWN` reading that must clear the same bar. Only genuine OPEN⇄CLOSED changes notify (UNKNOWN/OFFLINE are logged, never announced). Guards against backward API clock skew; writes `OFFLINE` on shutdown / unclean restart. |
 | `database.ts` | SQLite schema + all queries. Builds the dashboard payload and KPIs on read. Derives semester periods from stored data. |
 | `bot.ts` | Telegram commands (`/start`, `/subscribe`, `/unsubscribe`, `/status`, `/schichtplan`) + `notifyAdmin()`. |
 | `shiftPlanService.ts` | Scrapes/parses/persists the shift plan; `getCurrentShift()` for the dashboard. |

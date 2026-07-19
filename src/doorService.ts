@@ -3,8 +3,22 @@ import { Logger } from "./logger.js";
 
 type DoorStatus = "OPEN" | "CLOSED" | "UNKNOWN" | "OFFLINE";
 
+// A reading must repeat this many consecutive polls before it's treated as a
+// real state change (hysteresis / debounce). This rides out a flaky sensor or
+// API — a single timeout or momentary glitch never flips the door or notifies
+// anyone. Configurable via STATUS_CONFIRMATIONS; at the 10s poll cadence the
+// default (3) means genuine changes are confirmed within ~30s.
+const REQUIRED_CONFIRMATIONS = Math.max(1, Number(process.env.STATUS_CONFIRMATIONS) || 3);
+
 class DoorService {
-   private _lastStatus: DoorStatus = "UNKNOWN";
+   // The last status we've *committed* — written to the DB and reported to
+   // callers. Only a debounced reading ever becomes the confirmed status.
+   private _confirmedStatus: DoorStatus = "UNKNOWN";
+   // The last OPEN/CLOSED we told subscribers about. UNKNOWN/OFFLINE never
+   // update this, so a brief outage between two CLOSED periods is silent.
+   private _lastNotifiedStatus: "OPEN" | "CLOSED" | null = null;
+   // A pending reading that hasn't yet been seen enough times to confirm.
+   private _candidate: { status: DoorStatus; eventTime: Date; streak: number } | null = null;
    private _lastApiTimestamp: Date | null = null; // from API response, not our clock
 
    private _pollingInterval?: number;
@@ -59,7 +73,10 @@ class DoorService {
       const last = this._db.getLastDoorStatus();
 
       if (last) {
-         this._lastStatus = last.status;
+         this._confirmedStatus = last.status;
+         // Seed the notified state so we don't re-announce the same OPEN/CLOSED
+         // right after a restart.
+         this._lastNotifiedStatus = last.status === "OPEN" || last.status === "CLOSED" ? last.status : null;
          this._lastApiTimestamp = last.status === "OFFLINE" ? null : last.eventTime;
          this._logger.info(`Restored last known status "${last.status}" from DB`);
       }
@@ -69,6 +86,7 @@ class DoorService {
       if (!process.env.DEVELOPMENT && (!last || last.status !== "OFFLINE")) {
          const now = new Date();
          this._db.saveDoorStatus("OFFLINE", now);
+         this._confirmedStatus = "OFFLINE"; // so the first confirmed reading records the recovery
          this._logger.warn(`No clean shutdown detected — wrote OFFLINE at ${now.toISOString()}`);
       }
    }
@@ -93,7 +111,7 @@ class DoorService {
 
    public getStatus(): { status: DoorStatus; lastUpdated: Date | null } {
       return {
-         status: this._lastStatus,
+         status: this._confirmedStatus,
          lastUpdated: this._lastApiTimestamp,
       };
    }
@@ -120,21 +138,15 @@ class DoorService {
       };
    }
 
-   private transitionToUnknown(): void {
-      if (this._lastStatus !== "UNKNOWN") {
-         const now = new Date();
-         this._db.saveDoorStatus("UNKNOWN", now);
-         this._lastStatus = "UNKNOWN";
-         this._lastApiTimestamp = null; // reset: next good response must always log a transition
-         this._logger.info(`Door status → UNKNOWN at ${now.toISOString()}`);
-      }
-   }
-
    private async updateDoorStatus(): Promise<void> {
+      let reading: DoorStatus;
+      let eventTime: Date;
+
       try {
          const { status, timestamp: apiTimestamp } = await this.fetchStatusFromApi();
 
-         // Guard: clock skew / backward-drifting API timestamp
+         // Guard: clock skew / backward-drifting API timestamp. Drop the poll
+         // entirely so it doesn't count toward a confirmation.
          if (this._lastApiTimestamp !== null && apiTimestamp < this._lastApiTimestamp) {
             this._logger.warn(
                `API timestamp went backward ` +
@@ -143,44 +155,57 @@ class DoorService {
             return;
          }
 
-         const statusChanged = status !== this._lastStatus;
-         const timestampChanged =
-            this._lastApiTimestamp !== null && apiTimestamp.getTime() !== this._lastApiTimestamp.getTime();
-         const isRecoveryPoll = this._lastApiTimestamp === null;
-
-         if (statusChanged || isRecoveryPoll) {
-            this._db.saveDoorStatus(status, apiTimestamp);
-
-            if (statusChanged) {
-               this._statusChangeSubscribers.forEach((sub) => {
-                  sub.handler(status);
-               });
-            }
-
-            this._logger.info(
-               isRecoveryPoll && !statusChanged
-                  ? `Door status recovered → ${status} at ${apiTimestamp.toISOString()}`
-                  : `Door status → ${status} at ${apiTimestamp.toISOString()}`,
-            );
-         } else if (timestampChanged) {
-            this._logger.debug(
-               `API timestamp reset for ${status}: ` +
-                  `${this._lastApiTimestamp!.toISOString()} → ${apiTimestamp.toISOString()}, no real change`,
-            );
-         }
-         // Else: status and timestamp identical — silent, no DB write
-
-         this._lastStatus = status;
          this._lastApiTimestamp = apiTimestamp;
+         reading = status;
+         eventTime = apiTimestamp;
       } catch (err: unknown) {
-         if (err instanceof Error) {
-            if (err.name === "TimeoutError") {
-               this._logger.error("Failed to fetch door status: Request timed out!");
-            } else {
-               this._logger.error(`Failed to fetch door status: ${err.message}`);
-            }
-            this.transitionToUnknown();
+         if (err instanceof Error && err.name === "TimeoutError") {
+            this._logger.error("Failed to fetch door status: Request timed out!");
+         } else if (err instanceof Error) {
+            this._logger.error(`Failed to fetch door status: ${err.message}`);
+         } else {
+            this._logger.error(`Failed to fetch door status: ${String(err)}`);
          }
+         // A failed poll is an UNKNOWN reading like any other — it must clear the
+         // confirmation bar before it flips the door, so a single blip is a no-op.
+         reading = "UNKNOWN";
+         eventTime = new Date();
+      }
+
+      this.registerReading(reading, eventTime);
+   }
+
+   /* Debounce a single poll reading. Only once the same status has been seen
+      REQUIRED_CONFIRMATIONS times in a row does it get committed — written to the
+      DB and (for OPEN/CLOSED) fanned out to subscribers. This is what stops a
+      flaky sensor from logging churn and spamming notifications. */
+   private registerReading(reading: DoorStatus, eventTime: Date): void {
+      if (this._candidate && this._candidate.status === reading) {
+         this._candidate.streak += 1;
+      } else {
+         // New candidate — keep the *first* time we saw it as the event time, so
+         // the recorded change reflects when it actually began, not when it was
+         // confirmed REQUIRED_CONFIRMATIONS polls later.
+         this._candidate = { status: reading, eventTime, streak: 1 };
+      }
+
+      if (this._candidate.streak < REQUIRED_CONFIRMATIONS) return;
+      if (this._candidate.status === this._confirmedStatus) return; // already committed
+
+      this.commitStatus(this._candidate.status, this._candidate.eventTime);
+   }
+
+   private commitStatus(status: DoorStatus, eventTime: Date): void {
+      this._confirmedStatus = status;
+      this._db.saveDoorStatus(status, eventTime);
+      this._logger.info(`Door status confirmed → ${status} at ${eventTime.toISOString()}`);
+
+      // Only notify on genuine OPEN⇄CLOSED changes. Transient UNKNOWN/OFFLINE
+      // are recorded but never announced, and we never repeat the same state —
+      // so an outage between two CLOSED periods stays silent.
+      if ((status === "OPEN" || status === "CLOSED") && this._lastNotifiedStatus !== status) {
+         this._lastNotifiedStatus = status;
+         this._statusChangeSubscribers.forEach((sub) => sub.handler(status));
       }
    }
 }

@@ -152,3 +152,6 @@ data
 .DS_Store
 history.json
 history copy.json
+
+# Local dumps of server data (contain subscriber PII) — never commit
+lel/
